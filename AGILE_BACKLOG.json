@@ -1,0 +1,382 @@
+{
+  "project": "Writer's Block Assistant",
+  "description": "Following Semantic Seed Venture Studio's XP-oriented development standards with focus on BDD/TDD",
+  "epics": [
+    {
+      "id": "E1",
+      "name": "Infrastructure Foundation",
+      "valueStatement": "Build secure, scalable infrastructure for the application",
+      "securityImpact": "High",
+      "stories": [
+        {
+          "id": "IF-001",
+          "name": "Tenant Schema Setup",
+          "points": 3,
+          "type": "Feature",
+          "branch": "feature/MT-001",
+          "bddScenarios": [
+            {
+              "feature": "Multi-tenant Schema",
+              "scenarios": [
+                {
+                  "name": "Schema creation",
+                  "given": "tenant onboarding request",
+                  "when": "creating schema",
+                  "then": "isolated schema created",
+                  "and": "baseline tables added"
+                }
+              ]
+            }
+          ],
+          "acceptanceCriteria": [
+            "Schema isolation",
+            "Table creation",
+            "Migration system"
+          ],
+          "testStrategy": [
+            "Unit Tests: Schema",
+            "Integration Tests: Isolation",
+            "Migration Tests: Updates"
+          ]
+        },
+        {
+          "id": "IF-002",
+          "name": "Tenant Configuration API",
+          "points": 2,
+          "type": "Feature",
+          "branch": "feature/MT-002"
+        },
+        {
+          "id": "IF-003",
+          "name": "Tenant Data Isolation",
+          "points": 3,
+          "type": "Feature",
+          "branch": "feature/MT-003"
+        },
+        {
+          "id": "IF-004",
+          "name": "Role Management API",
+          "points": 3,
+          "type": "Feature",
+          "branch": "feature/RBAC-001"
+        },
+        {
+          "id": "IF-005",
+          "name": "Permission Assignment",
+          "points": 2,
+          "type": "Feature",
+          "branch": "feature/RBAC-002"
+        },
+        {
+          "id": "IF-006",
+          "name": "Role Hierarchy",
+          "points": 3,
+          "type": "Feature",
+          "branch": "feature/RBAC-003"
+        },
+        {
+          "id": "IF-007",
+          "name": "Vector Storage Setup",
+          "points": 3,
+          "type": "Feature",
+          "branch": "feature/DB-001"
+        },
+        {
+          "id": "IF-008",
+          "name": "Data Partitioning",
+          "points": 3,
+          "type": "Feature",
+          "branch": "feature/DB-002"
+        },
+        {
+          "id": "IF-009",
+          "name": "Backup & Recovery",
+          "points": 3,
+          "type": "Feature",
+          "branch": "feature/DB-003"
+        }
+      ]
+    },
+    {
+      "id": "E2",
+      "name": "Content Management",
+      "valueStatement": "Enable efficient content creation and management",
+      "stories": [
+        {
+          "id": "CM-001",
+          "name": "Version History Core",
+          "points": 3,
+          "type": "Feature",
+          "branch": "feature/CMS-001"
+        },
+        {
+          "id": "CM-002",
+          "name": "Version Comparison",
+          "points": 2,
+          "type": "Feature",
+          "branch": "feature/CMS-002"
+        },
+        {
+          "id": "CM-003",
+          "name": "Version Restoration",
+          "points": 3,
+          "type": "Feature",
+          "branch": "feature/CMS-003"
+        },
+        {
+          "id": "CM-004",
+          "name": "Format Conversion",
+          "points": 3,
+          "type": "Feature",
+          "branch": "feature/CMS-004"
+        },
+        {
+          "id": "CM-005",
+          "name": "Content Validation",
+          "points": 2,
+          "type": "Feature",
+          "branch": "feature/CMS-005"
+        },
+        {
+          "id": "CM-006",
+          "name": "Content Analysis",
+          "points": 3,
+          "type": "Feature",
+          "branch": "feature/CMS-006"
+        }
+      ]
+    },
+    {
+      "id": "E3",
+      "name": "AI Integration",
+      "valueStatement": "Enable intelligent writing assistance through local AI models",
+      "securityImpact": "High",
+      "stories": [
+        {
+          "id": "AI-001",
+          "name": "Ollama Service Integration",
+          "points": 3,
+          "type": "Feature",
+          "branch": "feature/AI-001"
+        },
+        {
+          "id": "AI-002",
+          "name": "Model Management",
+          "points": 2,
+          "type": "Feature",
+          "branch": "feature/AI-002"
+        },
+        {
+          "id": "AI-003",
+          "name": "Inference Pipeline",
+          "points": 3,
+          "type": "Feature",
+          "branch": "feature/AI-003"
+        },
+        {
+          "id": "AI-004",
+          "name": "Vector Generation",
+          "points": 2,
+          "type": "Feature",
+          "branch": "feature/AI-004"
+        },
+        {
+          "id": "AI-005",
+          "name": "Similarity Search",
+          "points": 3,
+          "type": "Feature",
+          "branch": "feature/AI-005"
+        },
+        {
+          "id": "AI-006",
+          "name": "Context Ranking",
+          "points": 3,
+          "type": "Feature",
+          "branch": "feature/AI-006"
+        },
+        {
+          "id": "AI-007",
+          "name": "Style Profiling",
+          "points": 2,
+          "type": "Feature",
+          "branch": "feature/AI-007"
+        },
+        {
+          "id": "AI-008",
+          "name": "Style Checking",
+          "points": 3,
+          "type": "Feature",
+          "branch": "feature/AI-008"
+        },
+        {
+          "id": "AI-009",
+          "name": "Style Adaptation",
+          "points": 3,
+          "type": "Feature",
+          "branch": "feature/AI-009"
+        }
+      ]
+    },
+    {
+      "id": "E4",
+      "name": "Knowledge Management",
+      "valueStatement": "Create and maintain knowledge structures from content",
+      "stories": [
+        {
+          "id": "KM-001",
+          "name": "Vault Sync Core",
+          "points": 3,
+          "type": "Feature",
+          "branch": "feature/KM-001"
+        },
+        {
+          "id": "KM-002",
+          "name": "Markdown Processing",
+          "points": 2,
+          "type": "Feature",
+          "branch": "feature/KM-002"
+        },
+        {
+          "id": "KM-003",
+          "name": "Metadata Management",
+          "points": 3,
+          "type": "Feature",
+          "branch": "feature/KM-003"
+        },
+        {
+          "id": "KM-004",
+          "name": "Conflict Resolution",
+          "points": 3,
+          "type": "Feature",
+          "branch": "feature/KM-004"
+        },
+        {
+          "id": "KM-005",
+          "name": "Graph Core",
+          "points": 3,
+          "type": "Feature",
+          "branch": "feature/KM-005"
+        },
+        {
+          "id": "KM-006",
+          "name": "Graph Visualization",
+          "points": 3,
+          "type": "Feature",
+          "branch": "feature/KM-006"
+        },
+        {
+          "id": "KM-007",
+          "name": "Graph Search",
+          "points": 2,
+          "type": "Feature",
+          "branch": "feature/KM-007"
+        },
+        {
+          "id": "KM-008",
+          "name": "Graph Analytics",
+          "points": 3,
+          "type": "Feature",
+          "branch": "feature/KM-008"
+        }
+      ]
+    },
+    {
+      "id": "E5",
+      "name": "VSCode Extension",
+      "valueStatement": "Provide seamless writing assistance within VSCode",
+      "stories": [
+        {
+          "id": "VSC-001",
+          "name": "Command Integration",
+          "points": 2,
+          "type": "Feature",
+          "branch": "feature/VSC-001"
+        },
+        {
+          "id": "VSC-002",
+          "name": "Custom Views",
+          "points": 3,
+          "type": "Feature",
+          "branch": "feature/VSC-002"
+        },
+        {
+          "id": "VSC-003",
+          "name": "Input Handling",
+          "points": 3,
+          "type": "Feature",
+          "branch": "feature/VSC-003"
+        },
+        {
+          "id": "VSC-004",
+          "name": "WebSocket Core",
+          "points": 3,
+          "type": "Feature",
+          "branch": "feature/VSC-004"
+        },
+        {
+          "id": "VSC-005",
+          "name": "Live Suggestions",
+          "points": 3,
+          "type": "Feature",
+          "branch": "feature/VSC-005"
+        },
+        {
+          "id": "VSC-006",
+          "name": "Collaboration",
+          "points": 3,
+          "type": "Feature",
+          "branch": "feature/VSC-006"
+        },
+        {
+          "id": "VSC-007",
+          "name": "Performance Optimization",
+          "points": 2,
+          "type": "Feature",
+          "branch": "feature/VSC-007"
+        }
+      ]
+    },
+    {
+      "id": "E6",
+      "name": "Enterprise Features",
+      "valueStatement": "Provide enterprise-grade security, compliance, and analytics",
+      "stories": [
+        {
+          "id": "ENT-001",
+          "name": "Usage Tracking",
+          "points": 3,
+          "type": "Feature",
+          "branch": "feature/ENT-001"
+        },
+        {
+          "id": "ENT-002",
+          "name": "Performance Monitoring",
+          "points": 3,
+          "type": "Feature",
+          "branch": "feature/ENT-002"
+        },
+        {
+          "id": "ENT-003",
+          "name": "Analytics Dashboard",
+          "points": 2,
+          "type": "Feature",
+          "branch": "feature/ENT-003"
+        }
+      ]
+    }
+  ],
+  "definitionOfReady": [
+    "Story has clear acceptance criteria",
+    "Dependencies are identified",
+    "Technical approach is understood",
+    "Story is estimated and sized ≤3 points",
+    "Test scenarios are defined"
+  ],
+  "definitionOfDone": [
+    "Code is reviewed and approved",
+    "Tests are passing",
+    "Documentation is updated",
+    "Acceptance criteria met",
+    "Performance requirements met"
+  ]
+}
