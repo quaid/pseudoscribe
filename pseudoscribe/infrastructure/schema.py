@@ -67,7 +67,7 @@ class SchemaManager:
             
             # Create roles table
             conn.execute(text(f"""
-                CREATE TABLE IF NOT EXISTS public.roles (
+                CREATE TABLE IF NOT EXISTS {tenant.schema_name}.roles (
                     id SERIAL PRIMARY KEY,
                     name VARCHAR(255) NOT NULL,
                     description TEXT,
@@ -75,7 +75,7 @@ class SchemaManager:
                     tenant_id VARCHAR(255) NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE (name, tenant_id)
+                    UNIQUE (name)
                 )
             """))
             

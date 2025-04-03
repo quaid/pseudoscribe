@@ -13,28 +13,32 @@ def setup_database():
     """Set up test database before each test"""
     engine = create_engine("postgresql://localhost/pseudoscribe")
     
-    # Create roles table in public schema
+    # Create test tenant and schema
     with engine.connect() as conn:
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS public.roles (
-                id SERIAL PRIMARY KEY,
-                name VARCHAR(255) NOT NULL,
-                description TEXT,
-                permissions JSONB NOT NULL DEFAULT '[]',
-                tenant_id VARCHAR(255) NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(name, tenant_id),
-                FOREIGN KEY (tenant_id) REFERENCES tenant_configurations(tenant_id)
-            )
-        """))
-        conn.commit()
-        
         # Insert test tenant if not exists
         conn.execute(text("""
             INSERT INTO public.tenant_configurations (tenant_id, schema_name)
-            VALUES ('test-tenant', 'tenant_1')
+            VALUES ('test-tenant', 'tenant_test_tenant')
             ON CONFLICT (tenant_id) DO NOTHING
+        """))
+        conn.commit()
+        
+        # Create tenant schema
+        conn.execute(text("CREATE SCHEMA IF NOT EXISTS tenant_test_tenant"))
+        conn.commit()
+        
+        # Create roles table in tenant schema
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS tenant_test_tenant.roles (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                description TEXT,
+                permissions JSONB NOT NULL DEFAULT '[]'::jsonb,
+                tenant_id VARCHAR(255) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(name)
+            )
         """))
         conn.commit()
     
@@ -42,7 +46,7 @@ def setup_database():
     
     # Clean up
     with engine.connect() as conn:
-        conn.execute(text("DELETE FROM public.roles"))
+        conn.execute(text("DROP SCHEMA IF EXISTS tenant_test_tenant CASCADE"))
         conn.commit()
 
 @pytest.mark.asyncio
