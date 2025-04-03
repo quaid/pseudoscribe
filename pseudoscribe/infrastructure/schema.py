@@ -31,7 +31,16 @@ class SchemaManager:
         Raises:
             SchemaError: If schema creation fails
         """
-        raise NotImplementedError("WIP: Red test phase")
+        with self.engine.connect() as conn:
+            # Create schema if it doesn't exist
+            conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {tenant.schema_name}"))
+            conn.commit()
+            
+            # Initialize baseline tables
+            await self.initialize_baseline_tables(tenant)
+            
+            # Validate schema isolation
+            return await self.validate_schema_isolation(tenant)
     
     async def initialize_baseline_tables(self, tenant: TenantConfig) -> bool:
         """
@@ -46,7 +55,29 @@ class SchemaManager:
         Raises:
             SchemaError: If table creation fails
         """
-        raise NotImplementedError("WIP: Red test phase")
+        with self.engine.connect() as conn:
+            # Create tenant info table
+            conn.execute(text(f"""
+                CREATE TABLE IF NOT EXISTS {tenant.schema_name}.tenant_info (
+                    tenant_id VARCHAR(255) PRIMARY KEY,
+                    display_name VARCHAR(255),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """))
+            
+            # Insert tenant info
+            conn.execute(text(f"""
+                INSERT INTO {tenant.schema_name}.tenant_info (tenant_id, display_name)
+                VALUES (:tenant_id, :display_name)
+                ON CONFLICT (tenant_id) DO UPDATE
+                SET display_name = EXCLUDED.display_name
+            """), {
+                "tenant_id": tenant.tenant_id,
+                "display_name": tenant.display_name
+            })
+            
+            conn.commit()
+            return True
     
     async def validate_schema_isolation(self, tenant: TenantConfig) -> bool:
         """
@@ -58,4 +89,26 @@ class SchemaManager:
         Returns:
             bool: True if schema is properly isolated
         """
-        raise NotImplementedError("WIP: Red test phase")
+        with self.engine.connect() as conn:
+            # Check if schema exists
+            result = conn.execute(text("""
+                SELECT schema_name 
+                FROM information_schema.schemata 
+                WHERE schema_name = :schema_name
+            """), {
+                "schema_name": tenant.schema_name
+            })
+            
+            if not result.fetchone():
+                return False
+            
+            # Check if tenant_info table exists and contains correct tenant_id
+            result = conn.execute(text(f"""
+                SELECT tenant_id 
+                FROM {tenant.schema_name}.tenant_info 
+                WHERE tenant_id = :tenant_id
+            """), {
+                "tenant_id": tenant.tenant_id
+            })
+            
+            return bool(result.fetchone())
