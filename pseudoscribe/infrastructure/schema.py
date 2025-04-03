@@ -65,6 +65,20 @@ class SchemaManager:
                 )
             """))
             
+            # Create roles table
+            conn.execute(text(f"""
+                CREATE TABLE IF NOT EXISTS public.roles (
+                    id SERIAL PRIMARY KEY,
+                    name VARCHAR(255) NOT NULL,
+                    description TEXT,
+                    permissions JSONB NOT NULL DEFAULT '[]'::jsonb,
+                    tenant_id VARCHAR(255) NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE (name, tenant_id)
+                )
+            """))
+            
             # Insert tenant info
             conn.execute(text(f"""
                 INSERT INTO {tenant.schema_name}.tenant_info (tenant_id, display_name)

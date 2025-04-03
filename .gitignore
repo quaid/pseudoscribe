@@ -50,7 +50,7 @@ Thumbs.db
 # Project specific
 .ollama/
 .vault/
-models/
+ai_models/
 *.log
 logs/
 temp/
