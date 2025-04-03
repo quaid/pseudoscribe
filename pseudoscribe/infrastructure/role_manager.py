@@ -23,7 +23,8 @@ class RoleManager:
             with self.engine.connect() as conn:
                 result = conn.execute(
                     text("""
-                        INSERT INTO public.roles (name, description, permissions, tenant_id)
+                        SET search_path = :schema;
+                        INSERT INTO roles (name, description, permissions, tenant_id)
                         VALUES (:name, :description, cast(:permissions as jsonb), :tenant_id)
                         RETURNING id, name, description, permissions, tenant_id, created_at, updated_at
                     """),
@@ -31,7 +32,8 @@ class RoleManager:
                         "name": role.name,
                         "description": role.description,
                         "permissions": json.dumps(list(role.permissions)),  # Convert to JSON string
-                        "tenant_id": tenant_id
+                        "tenant_id": tenant_id,
+                        "schema": f"tenant_{tenant_id.replace('-', '_')}"
                     }
                 )
                 conn.commit()
@@ -54,11 +56,12 @@ class RoleManager:
         with self.engine.connect() as conn:
             result = conn.execute(
                 text("""
+                    SET search_path = :schema;
                     SELECT id, name, description, permissions, tenant_id, created_at, updated_at
-                    FROM public.roles
-                    WHERE id = :role_id AND tenant_id = :tenant_id
+                    FROM roles
+                    WHERE id = :role_id
                 """),
-                {"role_id": role_id, "tenant_id": tenant_id}
+                {"role_id": role_id, "schema": f"tenant_{tenant_id.replace('-', '_')}"}
             )
             row = result.fetchone()
             
@@ -80,12 +83,12 @@ class RoleManager:
         with self.engine.connect() as conn:
             result = conn.execute(
                 text("""
+                    SET search_path = :schema;
                     SELECT id, name, description, permissions, tenant_id, created_at, updated_at
-                    FROM public.roles
-                    WHERE tenant_id = :tenant_id
+                    FROM roles
                     ORDER BY name
                 """),
-                {"tenant_id": tenant_id}
+                {"schema": f"tenant_{tenant_id.replace('-', '_')}"}
             )
             
             return [
@@ -108,11 +111,12 @@ class RoleManager:
                 # Get current role data
                 current = conn.execute(
                     text("""
+                        SET search_path = :schema;
                         SELECT name, description, permissions
-                        FROM public.roles
-                        WHERE id = :role_id AND tenant_id = :tenant_id
+                        FROM roles
+                        WHERE id = :role_id
                     """),
-                    {"role_id": role_id, "tenant_id": tenant_id}
+                    {"role_id": role_id, "schema": f"tenant_{tenant_id.replace('-', '_')}"}
                 ).fetchone()
                 
                 if not current:
@@ -121,12 +125,13 @@ class RoleManager:
                 # Update with new values or keep current ones
                 result = conn.execute(
                     text("""
-                        UPDATE public.roles
+                        SET search_path = :schema;
+                        UPDATE roles
                         SET name = :name,
                             description = :description,
                             permissions = cast(:permissions as jsonb),
                             updated_at = :updated_at
-                        WHERE id = :role_id AND tenant_id = :tenant_id
+                        WHERE id = :role_id
                         RETURNING id, name, description, permissions, tenant_id, created_at, updated_at
                     """),
                     {
@@ -135,7 +140,8 @@ class RoleManager:
                         "name": role.name or current.name,
                         "description": role.description or current.description,
                         "permissions": json.dumps(list(role.permissions)) if role.permissions is not None else json.dumps(current.permissions),
-                        "updated_at": datetime.now(UTC)
+                        "updated_at": datetime.now(UTC),
+                        "schema": f"tenant_{tenant_id.replace('-', '_')}"
                     }
                 )
                 conn.commit()
@@ -158,11 +164,12 @@ class RoleManager:
         with self.engine.connect() as conn:
             result = conn.execute(
                 text("""
-                    DELETE FROM public.roles
-                    WHERE id = :role_id AND tenant_id = :tenant_id
+                    SET search_path = :schema;
+                    DELETE FROM roles
+                    WHERE id = :role_id
                     RETURNING id
                 """),
-                {"role_id": role_id, "tenant_id": tenant_id}
+                {"role_id": role_id, "schema": f"tenant_{tenant_id.replace('-', '_')}"}
             )
             conn.commit()
             
