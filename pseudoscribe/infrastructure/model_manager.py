@@ -15,15 +15,22 @@ import httpx
 import json
 from fastapi import HTTPException
 from httpx import HTTPStatusError
-
+import re
 from .schema import ModelInfo
 from .ollama_service import OllamaService
 
+SEMVER_REGEX = r"^\d+\.\d+\.\d+$"  # Keep at module level for reusability
+
 class ModelManager:
-    """Service for managing AI models
+    """Service for managing AI models and versions
+    
+    Version Management:
+    - Follows semantic versioning (semver)
+    - Enforces version format validation
+    - Tracks loaded versions per model
     
     Security Considerations:
-    - Validates all model names
+    - Validates all model/version names
     - Implements request timeouts
     - Isolates model operations
     """
@@ -132,3 +139,58 @@ class ModelManager:
             return ModelInfo(**data)
         except HTTPStatusError as e:
             raise HTTPException(status_code=e.response.status_code, detail=str(e))
+
+    async def validate_version_compatibility(self, model_name: str, version: str) -> bool:
+        """Validate version format (semver)"""
+        if not re.match(SEMVER_REGEX, version):
+            raise HTTPException(
+                status_code=422,
+                detail=f"Version {version} must follow semver format (X.Y.Z)"
+            )
+        return True
+
+    async def load_model(self, model_name: str, version: str) -> bool:
+        """
+        Load a model into Ollama
+        
+        Args:
+            model_name: Name of the model to load
+            version: Version of the model to load
+        
+        Returns:
+            True if successful, False if model doesn't exist
+        
+        Raises:
+            HTTPException: For communication errors (other than 404)
+        """
+        await self.validate_version_compatibility(model_name, version)
+        try:
+            async with self.client.stream(
+                "POST",
+                f"{self.base_url}/api/pull",
+                json={"name": f"{model_name}:{version}"},
+                timeout=30.0
+            ) as response:
+                if response.status_code == 404:
+                    raise HTTPException(status_code=404, detail="Model not found")
+                response.raise_for_status()
+                async for chunk in response.aiter_bytes():
+                    if b"error" in chunk:
+                        raise HTTPException(status_code=500, detail=chunk.decode())
+            return True
+        except TimeoutError:
+            raise HTTPException(status_code=408, detail="Request timed out")
+        except HTTPStatusError as e:
+            raise HTTPException(status_code=e.response.status_code, detail=str(e))
+
+    async def get_model_versions(self, model_name: str) -> List[str]:
+        """Get available versions for a model"""
+        model_info = await self.get_model_status(model_name)
+        if not model_info:
+            return []
+        return model_info.details.get("versions", [])
+
+    async def delete_model_version(self, model_name: str, version: str) -> bool:
+        """Delete a specific model version"""
+        await self.validate_version_compatibility(model_name, version)
+        return await self.unload_model(f"{model_name}:{version}")
