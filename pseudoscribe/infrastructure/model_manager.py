@@ -213,3 +213,18 @@ class ModelManager:
         """Delete a specific model version"""
         await self.validate_version_compatibility(model_name, version)
         return await self.unload_model(f"{model_name}:{version}")
+
+    async def generate_vectors(self, text: str) -> np.ndarray:
+        """Generate vector embeddings from input text.
+        
+        Args:
+            text: Input text to vectorize
+            
+        Returns:
+            np.ndarray: Vector embedding of specified dimensions
+            
+        Raises:
+            NotImplementedError: During TDD Red phase
+        """
+        # AI-004: Vector Generation - Red phase implementation
+        raise NotImplementedError("Vector generation pending ONNX integration")
