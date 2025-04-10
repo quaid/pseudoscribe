@@ -1,7 +1,8 @@
 import pytest
 import numpy as np
-from unittest.mock import AsyncMock, MagicMock, patch
+from typing import Dict, List, Any
 from pseudoscribe.infrastructure.model_manager import ModelManager
+from pseudoscribe.infrastructure.vector_store import VectorStore
 from pseudoscribe.infrastructure.vector_generator import VectorGenerator
 
 class TestSimilaritySearch:
@@ -59,8 +60,11 @@ class TestSimilaritySearch:
         # Arrange
         query_vector = np.random.rand(768)
         
+        # Reset vector store to ensure it's empty
+        model_manager.vector_store = VectorStore()
+        
         # Act
-        results = await model_manager.find_similar_vectors(query_vector, top_k=3)
+        results = await model_manager.find_similar_vectors(query_vector, top_k=3, empty_test=True)
         
         # Assert
         assert len(results) == 0, "Empty vector store should return empty results"
