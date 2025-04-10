@@ -1,3 +1,5 @@
+import numpy as np
+from .vector_generator import VectorGenerator
 """Service for managing AI models
 
 Privacy Note:
@@ -213,3 +215,16 @@ class ModelManager:
         """Delete a specific model version"""
         await self.validate_version_compatibility(model_name, version)
         return await self.unload_model(f"{model_name}:{version}")
+
+    async def generate_vectors(self, text: str) -> np.ndarray:
+        """Generate vector embeddings from text input.
+        
+        Args:
+            text: Input text to vectorize
+            
+        Returns:
+            np.ndarray: 768-dimensional vector embedding
+        """
+        generator = VectorGenerator()
+        await generator.initialize()
+        return await generator.generate(text)
