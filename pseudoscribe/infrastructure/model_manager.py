@@ -228,3 +228,20 @@ class ModelManager:
         generator = VectorGenerator()
         await generator.initialize()
         return await generator.generate(text)
+        
+    async def find_similar_vectors(self, query_vector: np.ndarray, top_k: int = 5, threshold: float = 0.0) -> List[Dict[str, Any]]:
+        """Find vectors similar to the query vector.
+        
+        Args:
+            query_vector: The vector to compare against
+            top_k: Maximum number of results to return
+            threshold: Minimum similarity score (0.0 to 1.0)
+            
+        Returns:
+            List of dictionaries with 'id' and 'score' keys
+            
+        Raises:
+            NotImplementedError: During TDD Red phase
+        """
+        # AI-005: Similarity Search - Red phase implementation
+        raise NotImplementedError("Similarity search pending implementation")
