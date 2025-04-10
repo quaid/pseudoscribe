@@ -5,12 +5,13 @@ import os
 import json
 import asyncio
 import logging
-from typing import Dict, List, Optional, Any, Union
+from typing import Dict, List, Optional, Any, Union, Tuple
 import httpx
 from fastapi import HTTPException
 import re
 import semver
 from datetime import datetime
+from scipy.spatial.distance import cosine
 
 logger = logging.getLogger(__name__)
 
@@ -281,6 +282,80 @@ class ModelManager:
         # Find similar vectors using the vector store
         return self.vector_store.find_similar(query_vector, top_k, threshold)
         
+    def _calculate_similarity_scores(self, query_vector: np.ndarray, contexts: Dict[str, Dict]) -> Dict[str, float]:
+        """Calculate similarity scores between query vector and context vectors.
+        
+        Args:
+            query_vector: The vector to compare against
+            contexts: Dictionary of contexts with vectors and metadata
+            
+        Returns:
+            Dictionary mapping context IDs to similarity scores
+        """
+        similarity_scores = {}
+        for context_id, context_data in contexts.items():
+            if "vector" not in context_data:
+                logger.warning(f"Context {context_id} has no vector, skipping")
+                continue
+                
+            # Calculate cosine similarity (1 - cosine distance)
+            similarity = 1.0 - cosine(query_vector, context_data["vector"])
+            similarity_scores[context_id] = similarity
+            
+        return similarity_scores
+        
+    def _normalize_weights(self, weights: Dict[str, float]) -> Dict[str, float]:
+        """Ensure weights sum to 1.0.
+        
+        Args:
+            weights: Dictionary of weights for different factors
+            
+        Returns:
+            Normalized weights dictionary
+        """
+        total_weight = sum(weights.values())
+        if abs(total_weight - 1.0) > 0.001:  # Allow small floating point error
+            logger.warning(f"Weights don't sum to 1.0 (sum: {total_weight}), normalizing")
+            return {k: v / total_weight for k, v in weights.items()}
+        return weights
+        
+    def _get_metadata_value(self, context_data: Dict[str, Any], factor_name: str, default: float = 0.5) -> float:
+        """Extract metadata value from context data.
+        
+        Args:
+            context_data: Context data dictionary
+            factor_name: Name of the factor to extract
+            default: Default value if factor is not found
+            
+        Returns:
+            Factor value as float
+        """
+        metadata = context_data.get("metadata", {})
+        return metadata.get(factor_name, default)
+        
+    def _apply_threshold_and_sort(self, results: List[Dict[str, Any]], threshold: float, top_k: Optional[int]) -> List[Dict[str, Any]]:
+        """Apply threshold, sort results, and limit to top_k.
+        
+        Args:
+            results: List of result dictionaries
+            threshold: Minimum score to include
+            top_k: Maximum number of results to return
+            
+        Returns:
+            Filtered, sorted, and limited results
+        """
+        # Filter by threshold
+        filtered_results = [r for r in results if r["score"] >= threshold]
+        
+        # Sort by score (descending)
+        filtered_results.sort(key=lambda x: x["score"], reverse=True)
+        
+        # Apply top_k limit if specified
+        if top_k is not None and top_k > 0:
+            filtered_results = filtered_results[:top_k]
+            
+        return filtered_results
+    
     async def rank_contexts(self, query_vector: np.ndarray, contexts: Dict[str, Dict], 
                            ranking_method: str = "similarity", top_k: int = None,
                            threshold: float = 0.0, weights: Dict[str, float] = None,
@@ -302,31 +377,26 @@ class ModelManager:
         logger.info(f"Ranking contexts using method: {ranking_method}")
         
         if not contexts:
+            logger.debug("No contexts provided, returning empty results")
             return []
             
-        results = []
-        
         # Calculate similarity scores for all contexts
-        similarity_scores = {}
-        for context_id, context_data in contexts.items():
-            if "vector" not in context_data:
-                logger.warning(f"Context {context_id} has no vector, skipping")
-                continue
-                
-            # Calculate cosine similarity (1 - cosine distance)
-            from scipy.spatial.distance import cosine
-            similarity = 1.0 - cosine(query_vector, context_data["vector"])
-            similarity_scores[context_id] = similarity
+        similarity_scores = self._calculate_similarity_scores(query_vector, contexts)
+        
+        if not similarity_scores:
+            logger.warning("No valid contexts with vectors found")
+            return []
+        
+        results = []
         
         # Apply ranking method
         if ranking_method == "similarity":
             # Rank by similarity only
             for context_id, similarity in similarity_scores.items():
-                if similarity >= threshold:
-                    results.append({
-                        "id": context_id,
-                        "score": float(similarity)
-                    })
+                results.append({
+                    "id": context_id,
+                    "score": float(similarity)
+                })
                     
         elif ranking_method == "weighted":
             # Use weighted combination of factors
@@ -339,20 +409,16 @@ class ModelManager:
                 }
                 
             # Ensure weights sum to 1.0
-            total_weight = sum(weights.values())
-            if abs(total_weight - 1.0) > 0.001:  # Allow small floating point error
-                logger.warning(f"Weights don't sum to 1.0 (sum: {total_weight}), normalizing")
-                weights = {k: v / total_weight for k, v in weights.items()}
+            weights = self._normalize_weights(weights)
                 
             for context_id, context_data in contexts.items():
                 if context_id not in similarity_scores:
                     continue
                     
-                # Get metadata factors or use defaults
-                metadata = context_data.get("metadata", {})
-                recency = metadata.get("recency", 0.5)
-                relevance = metadata.get("relevance", 0.5)
-                importance = metadata.get("importance", 0.5)
+                # Get metadata factors
+                recency = self._get_metadata_value(context_data, "recency")
+                relevance = self._get_metadata_value(context_data, "relevance")
+                importance = self._get_metadata_value(context_data, "importance")
                 
                 # Calculate weighted score
                 score = (
@@ -362,11 +428,10 @@ class ModelManager:
                     weights.get("importance", 0) * importance
                 )
                 
-                if score >= threshold:
-                    results.append({
-                        "id": context_id,
-                        "score": float(score)
-                    })
+                results.append({
+                    "id": context_id,
+                    "score": float(score)
+                })
                     
         elif ranking_method == "custom":
             # Use custom ranking configuration
@@ -380,33 +445,23 @@ class ModelManager:
                 if context_id not in similarity_scores:
                     continue
                     
-                # Get metadata factors or use defaults
-                metadata = context_data.get("metadata", {})
-                
                 # Calculate custom score
                 score = 0.0
                 for factor_name, factor_weight in factors.items():
                     if factor_name == "similarity":
                         factor_value = similarity_scores[context_id]
                     else:
-                        factor_value = metadata.get(factor_name, 0.5)
+                        factor_value = self._get_metadata_value(context_data, factor_name)
                         
                     score += factor_weight * factor_value
                 
-                if score >= threshold:
-                    results.append({
-                        "id": context_id,
-                        "score": float(score)
-                    })
+                results.append({
+                    "id": context_id,
+                    "score": float(score)
+                })
         else:
             logger.error(f"Unknown ranking method: {ranking_method}")
             return []
-            
-        # Sort results by score (descending)
-        results.sort(key=lambda x: x["score"], reverse=True)
         
-        # Apply top_k limit if specified
-        if top_k is not None and top_k > 0:
-            results = results[:top_k]
-            
-        return results
+        # Apply threshold, sort, and limit results
+        return self._apply_threshold_and_sort(results, threshold, top_k)
