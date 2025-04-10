@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict, List, Optional, Any
 import logging
 from scipy.spatial.distance import cosine
 
@@ -79,6 +79,11 @@ class VectorStore:
             
         if len(self.vectors) == 0:
             return []
+            
+        # Validate parameters
+        if threshold < 0.0 or threshold > 1.0:
+            logger.warning(f"Threshold should be between 0.0 and 1.0, got {threshold}")
+            threshold = max(0.0, min(threshold, 1.0))  # Clamp to valid range
             
         # Calculate similarity scores
         similarities = []
