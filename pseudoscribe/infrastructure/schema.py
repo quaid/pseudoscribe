@@ -1,6 +1,6 @@
 """Multi-tenant Schema Management for PseudoScribe"""
 
-from typing import Optional
+from typing import Optional, Dict, Any
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 from pydantic import BaseModel
@@ -10,6 +10,13 @@ class TenantConfig(BaseModel):
     tenant_id: str
     schema_name: str
     display_name: Optional[str] = None
+
+class ModelInfo(BaseModel):
+    """Information about a model"""
+    name: str
+    size: str
+    modified_at: str
+    details: Optional[Dict[str, Any]] = None
 
 class SchemaManager:
     """Manages tenant schema creation and isolation"""

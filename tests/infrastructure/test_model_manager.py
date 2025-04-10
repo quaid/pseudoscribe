@@ -40,11 +40,11 @@ async def test_load_model(model_manager, mocker):
     """Verify model loading"""
     mock_response = MagicMock()
     mock_response.status_code = 200
-    mocker.patch("httpx.AsyncClient.stream", 
+    mocker.patch("httpx.AsyncClient.stream",
                return_value=AsyncContextManagerMock(mock_response))
     
-    loaded = await model_manager.load_model("llama2")
-    assert loaded
+    loaded = await model_manager.load_model("llama2", "latest")
+    assert loaded is True
 
 @pytest.mark.asyncio
 async def test_unload_model(model_manager, mocker):
@@ -86,7 +86,7 @@ async def test_load_model_failure(model_manager, mocker):
                return_value=AsyncContextManagerMock(mock_response))
     
     with pytest.raises(HTTPException) as exc:
-        await model_manager.load_model("invalid_model_123")
+        await model_manager.load_model("invalid_model_123", "latest")
     assert exc.value.status_code == 404
 
 @pytest.mark.asyncio
@@ -108,7 +108,7 @@ async def test_model_streaming_performance(model_manager, mocker):
                return_value=AsyncContextManagerMock(mock_response))
     
     start = asyncio.get_event_loop().time()
-    await model_manager.load_model("llama2")
+    await model_manager.load_model("llama2", "latest")
     duration = asyncio.get_event_loop().time() - start
     assert duration < 5.0
 
@@ -122,8 +122,8 @@ async def test_concurrent_model_access(model_manager, mocker):
     
     # Simulate concurrent access
     results = await asyncio.gather(
-        model_manager.load_model("llama2"),
-        model_manager.load_model("llama2")
+        model_manager.load_model("llama2", "latest"),
+        model_manager.load_model("llama2", "latest")
     )
     assert all(results)
 
@@ -146,7 +146,7 @@ async def test_load_model_streaming(model_manager, mocker):
     mock_client.stream.return_value.__aenter__.return_value = mock_stream
     mocker.patch("httpx.AsyncClient", return_value=mock_client)
     
-    loaded = await model_manager.load_model("llama2")
+    loaded = await model_manager.load_model("llama2", "latest")
     assert loaded
 
 @pytest.mark.asyncio
@@ -178,6 +178,6 @@ async def test_load_model_timeout(model_manager, mocker):
     mocker.patch("httpx.AsyncClient.stream", side_effect=TimeoutError)
     
     with pytest.raises(HTTPException) as exc:
-        await model_manager.load_model("timeout-model")
+        await model_manager.load_model("timeout-model", "latest")
     assert exc.value.status_code == 408
     assert "timed out" in str(exc.value.detail).lower()
