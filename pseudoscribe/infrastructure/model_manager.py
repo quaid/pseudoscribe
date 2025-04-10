@@ -1,3 +1,5 @@
+import numpy as np
+from .vector_generator import VectorGenerator
 """Service for managing AI models
 
 Privacy Note:
@@ -215,16 +217,14 @@ class ModelManager:
         return await self.unload_model(f"{model_name}:{version}")
 
     async def generate_vectors(self, text: str) -> np.ndarray:
-        """Generate vector embeddings from input text.
+        """Generate vector embeddings from text input.
         
         Args:
             text: Input text to vectorize
             
         Returns:
-            np.ndarray: Vector embedding of specified dimensions
-            
-        Raises:
-            NotImplementedError: During TDD Red phase
+            np.ndarray: 768-dimensional vector embedding
         """
-        # AI-004: Vector Generation - Red phase implementation
-        raise NotImplementedError("Vector generation pending ONNX integration")
+        generator = VectorGenerator()
+        await generator.initialize()
+        return await generator.generate(text)
