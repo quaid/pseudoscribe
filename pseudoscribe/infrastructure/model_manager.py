@@ -280,3 +280,133 @@ class ModelManager:
         
         # Find similar vectors using the vector store
         return self.vector_store.find_similar(query_vector, top_k, threshold)
+        
+    async def rank_contexts(self, query_vector: np.ndarray, contexts: Dict[str, Dict], 
+                           ranking_method: str = "similarity", top_k: int = None,
+                           threshold: float = 0.0, weights: Dict[str, float] = None,
+                           custom_ranking: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+        """Rank contexts based on various factors including similarity, recency, relevance, and importance.
+        
+        Args:
+            query_vector: The vector to compare against
+            contexts: Dictionary of contexts with vectors and metadata
+            ranking_method: Method to use for ranking ("similarity", "weighted", "custom")
+            top_k: Maximum number of results to return (default: all)
+            threshold: Minimum score to include in results
+            weights: Dictionary of weights for different factors (for weighted ranking)
+            custom_ranking: Custom ranking configuration
+            
+        Returns:
+            List of dictionaries with 'id' and 'score' keys, sorted by score
+        """
+        logger.info(f"Ranking contexts using method: {ranking_method}")
+        
+        if not contexts:
+            return []
+            
+        results = []
+        
+        # Calculate similarity scores for all contexts
+        similarity_scores = {}
+        for context_id, context_data in contexts.items():
+            if "vector" not in context_data:
+                logger.warning(f"Context {context_id} has no vector, skipping")
+                continue
+                
+            # Calculate cosine similarity (1 - cosine distance)
+            from scipy.spatial.distance import cosine
+            similarity = 1.0 - cosine(query_vector, context_data["vector"])
+            similarity_scores[context_id] = similarity
+        
+        # Apply ranking method
+        if ranking_method == "similarity":
+            # Rank by similarity only
+            for context_id, similarity in similarity_scores.items():
+                if similarity >= threshold:
+                    results.append({
+                        "id": context_id,
+                        "score": float(similarity)
+                    })
+                    
+        elif ranking_method == "weighted":
+            # Use weighted combination of factors
+            if not weights:
+                weights = {
+                    "similarity": 0.6,
+                    "recency": 0.2,
+                    "relevance": 0.1,
+                    "importance": 0.1
+                }
+                
+            # Ensure weights sum to 1.0
+            total_weight = sum(weights.values())
+            if abs(total_weight - 1.0) > 0.001:  # Allow small floating point error
+                logger.warning(f"Weights don't sum to 1.0 (sum: {total_weight}), normalizing")
+                weights = {k: v / total_weight for k, v in weights.items()}
+                
+            for context_id, context_data in contexts.items():
+                if context_id not in similarity_scores:
+                    continue
+                    
+                # Get metadata factors or use defaults
+                metadata = context_data.get("metadata", {})
+                recency = metadata.get("recency", 0.5)
+                relevance = metadata.get("relevance", 0.5)
+                importance = metadata.get("importance", 0.5)
+                
+                # Calculate weighted score
+                score = (
+                    weights.get("similarity", 0) * similarity_scores[context_id] +
+                    weights.get("recency", 0) * recency +
+                    weights.get("relevance", 0) * relevance +
+                    weights.get("importance", 0) * importance
+                )
+                
+                if score >= threshold:
+                    results.append({
+                        "id": context_id,
+                        "score": float(score)
+                    })
+                    
+        elif ranking_method == "custom":
+            # Use custom ranking configuration
+            if not custom_ranking or "factors" not in custom_ranking:
+                logger.error("Custom ranking requires 'factors' configuration")
+                return []
+                
+            factors = custom_ranking.get("factors", {})
+            
+            for context_id, context_data in contexts.items():
+                if context_id not in similarity_scores:
+                    continue
+                    
+                # Get metadata factors or use defaults
+                metadata = context_data.get("metadata", {})
+                
+                # Calculate custom score
+                score = 0.0
+                for factor_name, factor_weight in factors.items():
+                    if factor_name == "similarity":
+                        factor_value = similarity_scores[context_id]
+                    else:
+                        factor_value = metadata.get(factor_name, 0.5)
+                        
+                    score += factor_weight * factor_value
+                
+                if score >= threshold:
+                    results.append({
+                        "id": context_id,
+                        "score": float(score)
+                    })
+        else:
+            logger.error(f"Unknown ranking method: {ranking_method}")
+            return []
+            
+        # Sort results by score (descending)
+        results.sort(key=lambda x: x["score"], reverse=True)
+        
+        # Apply top_k limit if specified
+        if top_k is not None and top_k > 0:
+            results = results[:top_k]
+            
+        return results
