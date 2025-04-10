@@ -20,6 +20,7 @@ from .schema import ModelInfo
 from .ollama_service import OllamaService
 
 SEMVER_REGEX = r"^\d+\.\d+\.\d+$"  # Keep at module level for reusability
+MODEL_NAME_REGEX = r"^[a-zA-Z0-9_-]+$"  # Only allow alphanumeric, hyphen and underscore
 
 class ModelManager:
     """Service for managing AI models and versions
@@ -137,15 +138,24 @@ class ModelManager:
             if not all(k in data for k in ("name", "size", "modified_at")):
                 raise HTTPException(status_code=500, detail="Invalid model info format")
             return ModelInfo(**data)
+        except httpx.TimeoutException:
+            raise HTTPException(status_code=408, detail="Model service timeout")
         except HTTPStatusError as e:
             raise HTTPException(status_code=e.response.status_code, detail=str(e))
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
 
     async def validate_version_compatibility(self, model_name: str, version: str) -> bool:
-        """Validate version format (semver)"""
-        if not re.match(SEMVER_REGEX, version):
+        """Validate model name and version format"""
+        if not re.match(MODEL_NAME_REGEX, model_name):
             raise HTTPException(
                 status_code=422,
-                detail=f"Version {version} must follow semver format (X.Y.Z)"
+                detail=f"Invalid model name '{model_name}'. Only alphanumeric, hyphen and underscore characters allowed"
+            )
+        if version != "latest" and not re.match(SEMVER_REGEX, version):
+            raise HTTPException(
+                status_code=422,
+                detail=f"Version {version} must follow semver format (X.Y.Z) or be 'latest'"
             )
         return True
 
@@ -185,10 +195,19 @@ class ModelManager:
 
     async def get_model_versions(self, model_name: str) -> List[str]:
         """Get available versions for a model"""
-        model_info = await self.get_model_status(model_name)
-        if not model_info:
-            return []
-        return model_info.details.get("versions", [])
+        try:
+            model_info = await self.get_model_status(model_name)
+            if not model_info:
+                return []
+            return model_info.details.get("versions", [])
+        except httpx.TimeoutException:
+            raise HTTPException(status_code=408, detail="Model service timeout")
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(status_code=e.response.status_code, detail=str(e))
+        except Exception as e:
+            if isinstance(e, HTTPException):
+                raise  # Preserve original HTTPException
+            raise HTTPException(status_code=500, detail=str(e))
 
     async def delete_model_version(self, model_name: str, version: str) -> bool:
         """Delete a specific model version"""
