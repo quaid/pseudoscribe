@@ -17,9 +17,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-cache-dir -r docker-requirements.txt
 RUN pip install --no-cache-dir python-multipart
 
-# Install Style API dependencies
-RUN pip install --no-cache-dir numpy scipy onnxruntime httpx semver
-
 # Create a fresh pseudoscribe directory structure with proper permissions
 RUN mkdir -p /app/pseudoscribe/api /app/pseudoscribe/infrastructure /app/pseudoscribe/models
 RUN chmod -R 755 /app/pseudoscribe
