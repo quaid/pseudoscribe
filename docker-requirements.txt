@@ -1,4 +1,13 @@
+# Markdown processing
 markdown==3.4.4
 beautifulsoup4==4.12.2
 html2text==2020.1.16
+
+# HTTP client
 httpx==0.25.0
+
+# Style API dependencies
+numpy==1.24.3
+scipy==1.10.1
+onnxruntime==1.15.1
+semver==3.0.1
