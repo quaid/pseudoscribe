@@ -27,7 +27,9 @@ exports.deactivate = exports.activate = void 0;
 const vscode = __importStar(require("vscode"));
 const commandManager_1 = require("./commands/commandManager");
 const viewManager_1 = require("./views/viewManager");
+const inputManager_1 = require("./input/inputManager");
 let viewManager;
+let inputManager;
 /**
  * Main extension entry point
  * Implements VSC-001: Command Integration
@@ -40,6 +42,11 @@ async function activate(context) {
         // Initialize view manager
         viewManager = new viewManager_1.ViewManager(context);
         await viewManager.initializeViews();
+        // Initialize input manager
+        inputManager = new inputManager_1.InputManager(context);
+        await inputManager.initialize();
+        await inputManager.registerShortcuts();
+        await inputManager.registerContextMenus();
         // Set context to indicate extension is activated
         vscode.commands.executeCommand('setContext', 'pseudoscribe:activated', true);
         // Show activation notification
@@ -57,6 +64,11 @@ function deactivate() {
     if (viewManager) {
         viewManager.dispose();
         viewManager = undefined;
+    }
+    // Dispose input manager
+    if (inputManager) {
+        inputManager.dispose();
+        inputManager = undefined;
     }
     // Set context to indicate extension is deactivated
     vscode.commands.executeCommand('setContext', 'pseudoscribe:activated', false);
