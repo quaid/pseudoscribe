@@ -111,14 +111,31 @@
       {
         "command": "pseudoscribe.analyzeStyle",
         "key": "ctrl+shift+a",
-        "mac": "cmd+shift+a",
         "when": "editorTextFocus"
       },
       {
         "command": "pseudoscribe.adaptContent",
         "key": "ctrl+shift+t",
-        "mac": "cmd+shift+t",
+        "when": "editorHasSelection"
+      },
+      {
+        "command": "pseudoscribe.quickAnalyze",
+        "key": "ctrl+shift+a",
         "when": "editorTextFocus"
+      },
+      {
+        "command": "pseudoscribe.quickAdapt",
+        "key": "ctrl+shift+t",
+        "when": "editorHasSelection"
+      },
+      {
+        "command": "pseudoscribe.showProfile",
+        "key": "ctrl+shift+p",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "pseudoscribe.toggleViews",
+        "key": "ctrl+shift+v"
       }
     ],
     "configuration": {

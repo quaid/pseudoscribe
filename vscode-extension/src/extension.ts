@@ -1,8 +1,10 @@
 import * as vscode from 'vscode';
 import { CommandManager } from './commands/commandManager';
 import { ViewManager } from './views/viewManager';
+import { InputManager } from './input/inputManager';
 
 let viewManager: ViewManager | undefined;
+let inputManager: InputManager | undefined;
 
 /**
  * Main extension entry point
@@ -17,6 +19,12 @@ export async function activate(context: vscode.ExtensionContext) {
         // Initialize view manager
         viewManager = new ViewManager(context);
         await viewManager.initializeViews();
+
+        // Initialize input manager
+        inputManager = new InputManager(context);
+        await inputManager.initialize();
+        await inputManager.registerShortcuts();
+        await inputManager.registerContextMenus();
 
         // Set context to indicate extension is activated
         vscode.commands.executeCommand('setContext', 'pseudoscribe:activated', true);
@@ -36,6 +44,12 @@ export function deactivate() {
     if (viewManager) {
         viewManager.dispose();
         viewManager = undefined;
+    }
+
+    // Dispose input manager
+    if (inputManager) {
+        inputManager.dispose();
+        inputManager = undefined;
     }
 
     // Set context to indicate extension is deactivated
