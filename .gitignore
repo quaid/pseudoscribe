@@ -39,6 +39,10 @@ yarn-error.log*
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+vscode-extension/node_modules/
+vscode-extension/out/
+vscode-extension/*.vsix
+vscode-extension/.vscode-test/
 
 # IDE
 .idea/

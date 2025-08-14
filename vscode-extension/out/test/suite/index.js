@@ -28,7 +28,7 @@ const path = __importStar(require("path"));
 const fs = __importStar(require("fs"));
 function run() {
     // Create the mocha test
-    const { Mocha } = require('mocha');
+    const Mocha = require('mocha');
     const mocha = new Mocha({
         ui: 'tdd',
         color: true
