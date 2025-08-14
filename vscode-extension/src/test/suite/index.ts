@@ -3,7 +3,7 @@ import * as fs from 'fs';
 
 export function run(): Promise<void> {
 	// Create the mocha test
-	const { Mocha } = require('mocha');
+	const Mocha = require('mocha');
 	const mocha = new Mocha({
 		ui: 'tdd',
 		color: true

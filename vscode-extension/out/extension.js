@@ -26,28 +26,41 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deactivate = exports.activate = void 0;
 const vscode = __importStar(require("vscode"));
 const commandManager_1 = require("./commands/commandManager");
+const viewManager_1 = require("./views/viewManager");
+let viewManager;
 /**
  * Main extension entry point
  * Implements VSC-001: Command Integration
  */
 async function activate(context) {
-    console.log('PseudoScribe Writer Assistant is now active!');
-    // Initialize command manager
-    const commandManager = new commandManager_1.CommandManager();
     try {
-        // Register all commands
+        // Initialize command manager
+        const commandManager = new commandManager_1.CommandManager();
         await commandManager.registerCommands(context);
+        // Initialize view manager
+        viewManager = new viewManager_1.ViewManager(context);
+        await viewManager.initializeViews();
+        // Set context to indicate extension is activated
+        vscode.commands.executeCommand('setContext', 'pseudoscribe:activated', true);
         // Show activation notification
-        vscode.window.showInformationMessage('PseudoScribe Writer Assistant activated successfully!');
+        vscode.window.showInformationMessage('PseudoScribe Writer Assistant activated!');
+        console.log('PseudoScribe extension activated successfully');
     }
     catch (error) {
         console.error('Failed to activate PseudoScribe extension:', error);
-        vscode.window.showErrorMessage('Failed to activate PseudoScribe Writer Assistant');
+        vscode.window.showErrorMessage('Failed to activate PseudoScribe extension');
     }
 }
 exports.activate = activate;
 function deactivate() {
-    console.log('PseudoScribe Writer Assistant is now deactivated');
+    // Dispose view manager
+    if (viewManager) {
+        viewManager.dispose();
+        viewManager = undefined;
+    }
+    // Set context to indicate extension is deactivated
+    vscode.commands.executeCommand('setContext', 'pseudoscribe:activated', false);
+    console.log('PseudoScribe extension deactivated');
 }
 exports.deactivate = deactivate;
 //# sourceMappingURL=extension.js.map

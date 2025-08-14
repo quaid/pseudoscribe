@@ -50,6 +50,33 @@
         "category": "PseudoScribe"
       }
     ],
+    "views": {
+      "pseudoscribe": [
+        {
+          "id": "pseudoscribe.styleProfile",
+          "name": "Style Profile",
+          "type": "webview",
+          "when": "pseudoscribe:activated",
+          "icon": "$(symbol-property)"
+        },
+        {
+          "id": "pseudoscribe.contentAnalysis",
+          "name": "Content Analysis",
+          "type": "webview",
+          "when": "pseudoscribe:activated",
+          "icon": "$(graph)"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "pseudoscribe",
+          "title": "PseudoScribe",
+          "icon": "$(edit)"
+        }
+      ]
+    },
     "menus": {
       "editor/context": [
         {
