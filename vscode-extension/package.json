@@ -1,0 +1,142 @@
+{
+  "name": "pseudoscribe-writer-assistant",
+  "displayName": "PseudoScribe Writer Assistant",
+  "description": "AI-powered writing assistant that bridges ideation and content creation",
+  "version": "0.1.0",
+  "publisher": "pseudoscribe",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other",
+    "Machine Learning",
+    "Snippets"
+  ],
+  "keywords": [
+    "writing",
+    "ai",
+    "assistant",
+    "content",
+    "style"
+  ],
+  "activationEvents": [
+    "onLanguage:markdown",
+    "onLanguage:plaintext",
+    "onCommand:pseudoscribe.analyzeStyle",
+    "onCommand:pseudoscribe.adaptContent",
+    "onCommand:pseudoscribe.connectService"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "pseudoscribe.analyzeStyle",
+        "title": "Analyze Writing Style",
+        "category": "PseudoScribe"
+      },
+      {
+        "command": "pseudoscribe.adaptContent",
+        "title": "Adapt Content Style",
+        "category": "PseudoScribe"
+      },
+      {
+        "command": "pseudoscribe.connectService",
+        "title": "Connect to PseudoScribe Service",
+        "category": "PseudoScribe"
+      },
+      {
+        "command": "pseudoscribe.showStyleProfile",
+        "title": "Show Style Profile",
+        "category": "PseudoScribe"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "pseudoscribe.analyzeStyle",
+          "when": "editorHasSelection",
+          "group": "pseudoscribe"
+        },
+        {
+          "command": "pseudoscribe.adaptContent",
+          "when": "editorHasSelection",
+          "group": "pseudoscribe"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "pseudoscribe.analyzeStyle",
+          "when": "editorIsOpen"
+        },
+        {
+          "command": "pseudoscribe.adaptContent",
+          "when": "editorIsOpen"
+        },
+        {
+          "command": "pseudoscribe.connectService"
+        },
+        {
+          "command": "pseudoscribe.showStyleProfile"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "pseudoscribe.analyzeStyle",
+        "key": "ctrl+shift+a",
+        "mac": "cmd+shift+a",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "pseudoscribe.adaptContent",
+        "key": "ctrl+shift+t",
+        "mac": "cmd+shift+t",
+        "when": "editorTextFocus"
+      }
+    ],
+    "configuration": {
+      "title": "PseudoScribe",
+      "properties": {
+        "pseudoscribe.serviceUrl": {
+          "type": "string",
+          "default": "http://localhost:8000",
+          "description": "URL of the PseudoScribe service"
+        },
+        "pseudoscribe.autoAnalyze": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically analyze writing style as you type"
+        },
+        "pseudoscribe.showInlineHints": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show inline style hints and suggestions"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "16.x",
+    "@types/vscode": "^1.74.0",
+    "@typescript-eslint/eslint-plugin": "^5.45.0",
+    "@typescript-eslint/parser": "^5.45.0",
+    "@vscode/test-electron": "^2.2.0",
+    "eslint": "^8.28.0",
+    "glob": "^10.4.5",
+    "mocha": "^10.1.0",
+    "typescript": "^4.9.4"
+  },
+  "dependencies": {
+    "axios": "^1.6.0"
+  }
+}
