@@ -165,7 +165,9 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
+    "test": "node ./out/test/runTest.js",
+    "test:container": "docker build -t pseudoscribe-vscode-test . && docker run --rm pseudoscribe-vscode-test",
+    "test:integration": "echo 'Integration tests not yet implemented'"
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",

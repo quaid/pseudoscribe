@@ -77,7 +77,7 @@ def start_environment() -> None:
     
     # Build and start the containers
     result = subprocess.run(
-        ["podman-compose", "up", "--build", "-d"],
+        ["docker-compose", "up", "--build", "-d"],
         cwd=PROJECT_ROOT,
         capture_output=True,
         text=True
@@ -97,7 +97,7 @@ def stop_environment() -> None:
     print("Stopping the containerized environment...")
     
     result = subprocess.run(
-        ["podman-compose", "down"],
+        ["docker-compose", "down"],
         cwd=PROJECT_ROOT,
         capture_output=True,
         text=True
@@ -124,7 +124,7 @@ def check_status() -> None:
     
     # Check if containers are running
     result = subprocess.run(
-        ["podman-compose", "ps"],
+        ["docker-compose", "ps"],
         cwd=PROJECT_ROOT,
         capture_output=True,
         text=True
@@ -139,7 +139,7 @@ def run_tests() -> None:
     
     # Run pytest in the API container
     result = subprocess.run(
-        ["podman-compose", "exec", "api", "pytest", "-xvs", "tests/"],
+        ["docker-compose", "exec", "api", "pytest", "-xvs", "tests/"],
         cwd=PROJECT_ROOT,
         capture_output=True,
         text=True
@@ -175,7 +175,7 @@ def deploy_api(api_name: str) -> None:
     
     # Rebuild the containers to include the new API
     result = subprocess.run(
-        ["podman-compose", "up", "--build", "-d"],
+        ["docker-compose", "up", "--build", "-d"],
         cwd=PROJECT_ROOT,
         capture_output=True,
         text=True

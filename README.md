@@ -13,13 +13,13 @@ PseudoScribe is an AI-powered writing assistant with a focus on multi-tenant sup
 - **Style Adaptation**: Adapt text to match a target writing style
 - **Style Checking**: Verify if text matches a target style profile
 - **Multi-tenant Support**: Secure isolation between different users/organizations
-- **Containerized Deployment**: Easy setup with Docker and docker-compose
+- **Containerized Deployment**: Easy setup with Podman (or Docker) and podman-compose
 
 ## Getting Started
 
 ### Prerequisites
 
-- Docker and docker-compose
+- Podman (or Docker) and podman-compose
 - Git
 
 ### Installation

@@ -1,0 +1,390 @@
+@Library('psk-jenkins') _
+
+pipeline {
+    agent {
+        kubernetes {
+            yamlFile 'pseudoscribe/KubernetesPods-PseudoScribe.yaml'
+        }
+    }
+    
+    environment {
+        // PseudoScribe specific environment variables
+        PSEUDOSCRIBE_ENV = 'test'
+        DATABASE_URL = 'postgresql://test_user:test_password@localhost:5432/pseudoscribe_test'
+        OLLAMA_BASE_URL = 'http://localhost:11434'
+        REDIS_URL = 'redis://localhost:6379'
+        
+        // Container registry
+        CONTAINER_REGISTRY = 'docker.intuit.com/sandbox-sandbox/pseudoscribe'
+        IMAGE_TAG = "${env.BUILD_NUMBER}-${env.GIT_COMMIT.take(8)}"
+        
+        // Test configuration
+        TEST_RESULTS_DIR = '/test-results'
+        WORKSPACE_DIR = '/workspace'
+    }
+    
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        timeout(time: 60, unit: 'MINUTES')
+        timestamps()
+    }
+    
+    stages {
+        stage('Setup') {
+            parallel {
+                stage('Prepare Workspace') {
+                    steps {
+                        container('test-runner') {
+                            script {
+                                sh '''
+                                    echo "Setting up PseudoScribe test environment..."
+                                    cp -r . ${WORKSPACE_DIR}/
+                                    cd ${WORKSPACE_DIR}
+                                    
+                                    # Install dependencies
+                                    pip install --upgrade pip
+                                    pip install -r requirements.txt
+                                    pip install -r requirements-test.txt
+                                '''
+                            }
+                        }
+                    }
+                }
+                
+                stage('Initialize Services') {
+                    steps {
+                        container('postgresql') {
+                            script {
+                                sh '''
+                                    echo "Initializing PostgreSQL database..."
+                                    # Database will auto-initialize with environment variables
+                                    sleep 5
+                                '''
+                            }
+                        }
+                        container('redis') {
+                            script {
+                                sh '''
+                                    echo "Starting Redis service..."
+                                    redis-server --daemonize yes
+                                '''
+                            }
+                        }
+                        container('ollama') {
+                            script {
+                                sh '''
+                                    echo "Starting Ollama service..."
+                                    ollama serve &
+                                    sleep 10
+                                    
+                                    # Pull required models for testing
+                                    ollama pull llama2:7b-chat
+                                '''
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('Code Quality') {
+            parallel {
+                stage('Lint') {
+                    steps {
+                        container('test-runner') {
+                            script {
+                                sh '''
+                                    cd ${WORKSPACE_DIR}
+                                    echo "Running code linting..."
+                                    
+                                    # Python linting
+                                    flake8 pseudoscribe/ --max-line-length=88 --extend-ignore=E203,W503
+                                    black --check pseudoscribe/
+                                    isort --check-only pseudoscribe/
+                                '''
+                            }
+                        }
+                    }
+                }
+                
+                stage('Type Check') {
+                    steps {
+                        container('test-runner') {
+                            script {
+                                sh '''
+                                    cd ${WORKSPACE_DIR}
+                                    echo "Running type checking..."
+                                    mypy pseudoscribe/ --ignore-missing-imports
+                                '''
+                            }
+                        }
+                    }
+                }
+                
+                stage('Security Scan') {
+                    steps {
+                        container('cpd2') {
+                            script {
+                                sh '''
+                                    cd ${WORKSPACE_DIR}
+                                    echo "Running security scan..."
+                                    # Run security scans with CPD2
+                                    bandit -r pseudoscribe/ -f json -o ${TEST_RESULTS_DIR}/security-scan.json || true
+                                '''
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('Unit Tests') {
+            steps {
+                container('test-runner') {
+                    script {
+                        sh '''
+                            cd ${WORKSPACE_DIR}
+                            echo "Running unit tests..."
+                            
+                            # Run unit tests with coverage
+                            python -m pytest tests/unit/ \
+                                -v \
+                                --cov=pseudoscribe \
+                                --cov-report=xml:${TEST_RESULTS_DIR}/coverage.xml \
+                                --cov-report=html:${TEST_RESULTS_DIR}/htmlcov \
+                                --junitxml=${TEST_RESULTS_DIR}/unit-test-results.xml
+                        '''
+                    }
+                }
+            }
+            post {
+                always {
+                    publishTestResults testResultsPattern: "${TEST_RESULTS_DIR}/unit-test-results.xml"
+                    publishCoverage adapters: [cobertura("${TEST_RESULTS_DIR}/coverage.xml")], sourceFileResolver: sourceFiles('STORE_LAST_BUILD')
+                }
+            }
+        }
+        
+        stage('Container Build & Test') {
+            parallel {
+                stage('Build Containers') {
+                    steps {
+                        container('podman') {
+                            script {
+                                sh '''
+                                    cd ${WORKSPACE_DIR}
+                                    echo "Building PseudoScribe containers..."
+                                    
+                                    # Build main application container
+                                    podman build -t pseudoscribe:${IMAGE_TAG} -f Dockerfile .
+                                    
+                                    # Build test container
+                                    podman build -t pseudoscribe-test:${IMAGE_TAG} -f Dockerfile.test .
+                                    
+                                    # Tag for registry
+                                    podman tag pseudoscribe:${IMAGE_TAG} ${CONTAINER_REGISTRY}:${IMAGE_TAG}
+                                    podman tag pseudoscribe:${IMAGE_TAG} ${CONTAINER_REGISTRY}:latest
+                                '''
+                            }
+                        }
+                    }
+                }
+                
+                stage('Container Tests') {
+                    steps {
+                        container('podman') {
+                            script {
+                                sh '''
+                                    cd ${WORKSPACE_DIR}
+                                    echo "Running container tests..."
+                                    
+                                    # Run the cloud container test script
+                                    ./pseudoscribe/scripts/test-containers-cloud.sh
+                                '''
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('Integration Tests') {
+            steps {
+                container('test-runner') {
+                    script {
+                        sh '''
+                            cd ${WORKSPACE_DIR}
+                            echo "Running integration tests..."
+                            
+                            # Wait for all services to be ready
+                            sleep 10
+                            
+                            # Run integration tests
+                            python -m pytest tests/integration/ \
+                                -v \
+                                --junitxml=${TEST_RESULTS_DIR}/integration-test-results.xml
+                        '''
+                    }
+                }
+            }
+            post {
+                always {
+                    publishTestResults testResultsPattern: "${TEST_RESULTS_DIR}/integration-test-results.xml"
+                }
+            }
+        }
+        
+        stage('Performance Tests') {
+            when {
+                anyOf {
+                    branch 'main'
+                    branch 'develop'
+                    changeRequest()
+                }
+            }
+            steps {
+                container('test-runner') {
+                    script {
+                        sh '''
+                            cd ${WORKSPACE_DIR}
+                            echo "Running performance tests..."
+                            
+                            # Run performance tests
+                            python -m pytest tests/performance/ \
+                                -v \
+                                --junitxml=${TEST_RESULTS_DIR}/performance-test-results.xml
+                        '''
+                    }
+                }
+            }
+            post {
+                always {
+                    publishTestResults testResultsPattern: "${TEST_RESULTS_DIR}/performance-test-results.xml"
+                }
+            }
+        }
+        
+        stage('End-to-End Tests') {
+            when {
+                anyOf {
+                    branch 'main'
+                    branch 'develop'
+                }
+            }
+            steps {
+                container('podman') {
+                    script {
+                        sh '''
+                            cd ${WORKSPACE_DIR}
+                            echo "Running end-to-end tests..."
+                            
+                            # Start full application stack
+                            podman-compose -f docker-compose.test.yml up -d
+                            
+                            # Wait for services to be ready
+                            sleep 30
+                            
+                            # Run E2E tests
+                            python -m pytest tests/e2e/ \
+                                -v \
+                                --junitxml=${TEST_RESULTS_DIR}/e2e-test-results.xml
+                        '''
+                    }
+                }
+            }
+            post {
+                always {
+                    container('podman') {
+                        sh 'cd ${WORKSPACE_DIR} && podman-compose -f docker-compose.test.yml down || true'
+                    }
+                    publishTestResults testResultsPattern: "${TEST_RESULTS_DIR}/e2e-test-results.xml"
+                }
+            }
+        }
+        
+        stage('Container Security Scan') {
+            steps {
+                container('podman') {
+                    script {
+                        sh '''
+                            echo "Running container security scan..."
+                            
+                            # Scan built containers for vulnerabilities
+                            if command -v trivy &> /dev/null; then
+                                trivy image pseudoscribe:${IMAGE_TAG} \
+                                    --format json \
+                                    --output ${TEST_RESULTS_DIR}/container-security-scan.json
+                            else
+                                echo "Trivy not available, skipping container security scan"
+                            fi
+                        '''
+                    }
+                }
+            }
+        }
+        
+        stage('Publish Artifacts') {
+            when {
+                anyOf {
+                    branch 'main'
+                    branch 'develop'
+                }
+            }
+            steps {
+                container('podman') {
+                    script {
+                        sh '''
+                            echo "Publishing container images..."
+                            
+                            # Push to container registry
+                            podman push ${CONTAINER_REGISTRY}:${IMAGE_TAG}
+                            podman push ${CONTAINER_REGISTRY}:latest
+                        '''
+                    }
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            // Archive test results
+            archiveArtifacts artifacts: "${TEST_RESULTS_DIR}/**/*", allowEmptyArchive: true
+            
+            // Publish test results
+            publishTestResults testResultsPattern: "${TEST_RESULTS_DIR}/*-test-results.xml"
+            
+            // Clean up workspace
+            container('podman') {
+                sh '''
+                    echo "Cleaning up containers..."
+                    podman system prune -f || true
+                '''
+            }
+        }
+        
+        success {
+            echo "✅ PseudoScribe pipeline completed successfully!"
+        }
+        
+        failure {
+            echo "❌ PseudoScribe pipeline failed!"
+            
+            // Send notifications on failure
+            script {
+                if (env.BRANCH_NAME == 'main' || env.BRANCH_NAME == 'develop') {
+                    // Send Slack notification for main branches
+                    slackSend(
+                        channel: '#pseudoscribe-alerts',
+                        color: 'danger',
+                        message: "🚨 PseudoScribe pipeline failed on ${env.BRANCH_NAME}: ${env.BUILD_URL}"
+                    )
+                }
+            }
+        }
+        
+        unstable {
+            echo "⚠️ PseudoScribe pipeline completed with warnings!"
+        }
+    }
+}

@@ -4,7 +4,7 @@ import * as fs from 'fs';
 export function run(): Promise<void> {
 	// Create the mocha test
 	const Mocha = require('mocha');
-	const mocha = new Mocha({
+	const mochaInstance = new Mocha({
 		ui: 'tdd',
 		color: true
 	});
@@ -36,10 +36,10 @@ export function run(): Promise<void> {
 			const testFiles = findTestFiles(testsRoot);
 			
 			// Add files to the test suite
-			testFiles.forEach((f: string) => mocha.addFile(f));
+			testFiles.forEach(f => mochaInstance.addFile(path.resolve(testsRoot, f)));
 
 			// Run the mocha test
-			mocha.run((failures: number) => {
+			mochaInstance.run((failures: number) => {
 				if (failures > 0) {
 					reject(new Error(`${failures} tests failed.`));
 				} else {
