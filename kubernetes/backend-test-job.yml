@@ -1,0 +1,16 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: backend-test
+spec:
+  template:
+    spec:
+      containers:
+        - name: backend-test
+          image: pseudoscribe/api:latest # Placeholder - will be built by CI/CD
+          command: ["python", "-m", "pytest", "tests/", "-v", "--tb=short"]
+          envFrom:
+            - configMapRef:
+                name: api-config
+      restartPolicy: Never
+  backoffLimit: 4
