@@ -37,8 +37,8 @@ class TenantMiddleware(BaseHTTPMiddleware):
         if not hasattr(request, "state"):
             request.state = State()
 
-        # Skip tenant check for tenant management endpoints
-        if request.url.path.startswith("/tenants"):
+        # Skip tenant check for tenant management and health endpoints
+        if request.url.path.startswith("/tenants") or request.url.path.startswith("/health"):
             return await call_next(request)
 
         # Ensure tenant ID is provided
