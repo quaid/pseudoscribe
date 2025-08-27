@@ -1,0 +1,20 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vscode-extension-test
+spec:
+  template:
+    spec:
+      containers:
+        - name: vscode-extension-test
+          image: pseudoscribe/vscode-extension:latest # Placeholder - will be built by CI/CD
+          command: ["/app/run-tests.sh"]
+          env:
+            - name: DISPLAY
+              value: ":99"
+            - name: NODE_ENV
+              value: "test"
+            - name: PSEUDOSCRIBE_API_URL
+              value: "http://api-svc:8000"
+      restartPolicy: Never
+  backoffLimit: 4

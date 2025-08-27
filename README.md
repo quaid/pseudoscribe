@@ -33,6 +33,23 @@ cd pseudoscribe
 ./scripts/operate_first.py start
 ```
 
+### Running with Rancher/Kubernetes (Optional)
+
+As an alternative to Podman, you can run the development environment on Kubernetes using the provided manifests.
+
+**Prerequisites:**
+- A running Kubernetes cluster (e.g., Rancher Desktop, kind, Minikube)
+- `kubectl` configured to connect to your cluster
+
+**Installation & Testing:**
+
+```bash
+# From the pseudoscribe directory, run the Rancher test script
+./scripts/test-rancher.sh
+```
+
+This script will deploy all services to your Kubernetes cluster, run the test suites, and clean up the resources upon completion.
+
 ## API Endpoints
 
 ### Style API
