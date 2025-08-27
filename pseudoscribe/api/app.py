@@ -8,6 +8,13 @@ from pseudoscribe.infrastructure.tenant_middleware import TenantMiddleware
 app = FastAPI(title="PseudoScribe API")
 app.add_middleware(TenantMiddleware)
 
+
+@app.get("/health", status_code=200)
+async def health_check():
+    """Health check endpoint"""
+    return {"status": "ok"}
+
+
 # Register routers
 app.include_router(tenant_config.router)
 app.include_router(role.router)
