@@ -38,7 +38,7 @@ class TenantMiddleware(BaseHTTPMiddleware):
             request.state = State()
 
         # Skip tenant check for tenant management and health endpoints
-        if request.url.path.startswith("/tenants") or request.url.path.startswith("/health"):
+        if request.url.path.startswith(('/tenants', '/health', '/docs', '/redoc', '/openapi.json')):
             return await call_next(request)
 
         # Ensure tenant ID is provided

@@ -12,7 +12,16 @@ router = APIRouter(prefix="/tenants", tags=["tenants"])
 
 # Initialize tenant config manager
 # TODO: Move connection string to config
-manager = TenantConfigManager("postgresql://localhost/pseudoscribe")
+import os
+
+# Get the database URL from the environment variable set by the ConfigMap
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if not DATABASE_URL:
+    # This will cause the container to fail fast if the config is missing
+    raise ValueError("DATABASE_URL environment variable not set")
+
+manager = TenantConfigManager(DATABASE_URL)
 
 @router.post("/", response_model=TenantConfigResponse)
 async def create_tenant(config: TenantConfigCreate):
