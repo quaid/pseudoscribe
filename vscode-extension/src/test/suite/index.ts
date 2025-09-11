@@ -1,12 +1,38 @@
 import * as path from 'path';
 import * as fs from 'fs';
+import * as vscode from 'vscode';
+import Mocha from 'mocha';
+import { ExtensionApi } from '../../extension';
+
+// Make the API globally available for tests
+declare global {
+    var extensionApi: ExtensionApi;
+}
 
 export function run(): Promise<void> {
 	// Create the mocha test
-	const Mocha = require('mocha');
 	const mochaInstance = new Mocha({
 		ui: 'tdd',
 		color: true
+	});
+
+	// Add global setup and teardown
+	mochaInstance.suite.beforeAll(async function (this: Mocha.Context) {
+		this.timeout(15000); // Increase timeout for activation
+		const extensionId = 'pseudoscribe.pseudoscribe-writer-assistant';
+		const extension = vscode.extensions.getExtension(extensionId);
+		if (!extension) {
+			throw new Error(`Extension ${extensionId} not found.`);
+		}
+		const api = await extension.activate();
+		(global as any).extensionApi = api;
+		console.log('Test Setup: PseudoScribe extension activated and API captured.');
+	});
+
+	mochaInstance.suite.afterAll(async () => {
+		// This is a bit of a hack, but there's no official deactivate API for tests
+		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+		console.log('Test Teardown: Closed all editors.');
 	});
 
 	const testsRoot = path.resolve(__dirname, '..');
@@ -48,7 +74,7 @@ export function run(): Promise<void> {
 			});
 		} catch (err) {
 			console.error('Error running tests:', err);
-			reject(err);
+				reject(err);
 		}
 	});
 }

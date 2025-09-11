@@ -57,7 +57,11 @@ class CommandManager {
             // Register showStyleProfile command
             const showStyleProfileCommand = vscode.commands.registerCommand('pseudoscribe.showStyleProfile', this.handleShowStyleProfile.bind(this));
             // Add all commands to context subscriptions
-            context.subscriptions.push(analyzeStyleCommand, adaptContentCommand, connectServiceCommand, showStyleProfileCommand);
+            // Register setApiToken command
+            const setApiTokenCommand = vscode.commands.registerCommand('pseudoscribe.setApiToken', this.handleSetApiToken.bind(this));
+            // Register activate command
+            const activateCommand = vscode.commands.registerCommand('pseudoscribe.activate', this.handleActivate.bind(this));
+            context.subscriptions.push(analyzeStyleCommand, adaptContentCommand, connectServiceCommand, showStyleProfileCommand, setApiTokenCommand, activateCommand);
             console.log('All PseudoScribe commands registered successfully');
         }
         catch (error) {
@@ -150,6 +154,17 @@ class CommandManager {
     /**
      * Handle showStyleProfile command execution
      */
+    async handleSetApiToken() {
+        const token = await vscode.window.showInputBox({ prompt: 'Enter your PseudoScribe API Token' });
+        if (token) {
+            // In a real scenario, we'd use the tokenManager to save this.
+            this.notifications.showInfo('API Token received.');
+        }
+    }
+    async handleActivate() {
+        // This command is for manual activation or testing.
+        this.notifications.showInfo('PseudoScribe is active.');
+    }
     async handleShowStyleProfile() {
         try {
             this.statusBar.showProgress('Loading style profile...');

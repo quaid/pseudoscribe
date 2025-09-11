@@ -22,16 +22,37 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.run = void 0;
 const path = __importStar(require("path"));
 const fs = __importStar(require("fs"));
+const vscode = __importStar(require("vscode"));
+const mocha_1 = __importDefault(require("mocha"));
 function run() {
     // Create the mocha test
-    const Mocha = require('mocha');
-    const mocha = new Mocha({
+    const mochaInstance = new mocha_1.default({
         ui: 'tdd',
         color: true
+    });
+    // Add global setup and teardown
+    mochaInstance.suite.beforeAll(async function () {
+        this.timeout(15000); // Increase timeout for activation
+        const extensionId = 'pseudoscribe.pseudoscribe-writer-assistant';
+        const extension = vscode.extensions.getExtension(extensionId);
+        if (!extension) {
+            throw new Error(`Extension ${extensionId} not found.`);
+        }
+        const api = await extension.activate();
+        global.extensionApi = api;
+        console.log('Test Setup: PseudoScribe extension activated and API captured.');
+    });
+    mochaInstance.suite.afterAll(async () => {
+        // This is a bit of a hack, but there's no official deactivate API for tests
+        await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+        console.log('Test Teardown: Closed all editors.');
     });
     const testsRoot = path.resolve(__dirname, '..');
     return new Promise((resolve, reject) => {
@@ -55,9 +76,9 @@ function run() {
             // Find all test files
             const testFiles = findTestFiles(testsRoot);
             // Add files to the test suite
-            testFiles.forEach((f) => mocha.addFile(f));
+            testFiles.forEach(f => mochaInstance.addFile(path.resolve(testsRoot, f)));
             // Run the mocha test
-            mocha.run((failures) => {
+            mochaInstance.run((failures) => {
                 if (failures > 0) {
                     reject(new Error(`${failures} tests failed.`));
                 }

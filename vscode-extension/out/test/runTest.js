@@ -24,6 +24,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const path = __importStar(require("path"));
+const os = __importStar(require("os"));
 const test_electron_1 = require("@vscode/test-electron");
 async function main() {
     try {
@@ -31,10 +32,16 @@ async function main() {
         // Passed to `--extensionDevelopmentPath`
         const extensionDevelopmentPath = path.resolve(__dirname, '../../');
         // The path to test runner
-        // Passed to --extensionTestsPath
+        // Passed to `--extensionTestsPath`
         const extensionTestsPath = path.resolve(__dirname, './suite/index');
+        // Use shorter path for user data to avoid IPC socket length issues
+        const userDataDir = path.join(os.tmpdir(), 'vscode-test-data');
         // Download VS Code, unzip it and run the integration test
-        await (0, test_electron_1.runTests)({ extensionDevelopmentPath, extensionTestsPath });
+        await (0, test_electron_1.runTests)({
+            extensionDevelopmentPath,
+            extensionTestsPath,
+            launchArgs: ['--user-data-dir', userDataDir]
+        });
     }
     catch (err) {
         console.error('Failed to run tests');

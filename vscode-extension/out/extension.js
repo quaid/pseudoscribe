@@ -28,34 +28,32 @@ const vscode = __importStar(require("vscode"));
 const commandManager_1 = require("./commands/commandManager");
 const viewManager_1 = require("./views/viewManager");
 const inputManager_1 = require("./input/inputManager");
+const tokenManager_1 = require("./auth/tokenManager");
+const serviceClient_1 = require("./services/serviceClient");
+const activation_1 = require("./activation");
 let viewManager;
 let inputManager;
-/**
- * Main extension entry point
- * Implements VSC-001: Command Integration
- */
 async function activate(context) {
     try {
-        // Initialize command manager
+        const tokenManager = new tokenManager_1.TokenManager(context);
+        const serviceClient = new serviceClient_1.ServiceClient();
         const commandManager = new commandManager_1.CommandManager();
-        await commandManager.registerCommands(context);
-        // Initialize view manager
         viewManager = new viewManager_1.ViewManager(context);
-        await viewManager.initializeViews();
-        // Initialize input manager
         inputManager = new inputManager_1.InputManager(context);
-        await inputManager.initialize();
-        await inputManager.registerShortcuts();
-        await inputManager.registerContextMenus();
-        // Set context to indicate extension is activated
-        vscode.commands.executeCommand('setContext', 'pseudoscribe:activated', true);
-        // Show activation notification
-        vscode.window.showInformationMessage('PseudoScribe Writer Assistant activated!');
-        console.log('PseudoScribe extension activated successfully');
+        await (0, activation_1.handleActivation)(context, tokenManager, serviceClient, commandManager, viewManager, inputManager);
+        return {
+            viewManager,
+            inputManager
+        };
     }
     catch (error) {
         console.error('Failed to activate PseudoScribe extension:', error);
         vscode.window.showErrorMessage('Failed to activate PseudoScribe extension');
+        // Return a dummy API on failure to satisfy the type contract
+        return {
+            viewManager: undefined,
+            inputManager: undefined
+        };
     }
 }
 exports.activate = activate;

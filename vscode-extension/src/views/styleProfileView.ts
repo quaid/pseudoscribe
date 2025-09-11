@@ -24,14 +24,11 @@ export class StyleProfileView implements vscode.WebviewViewProvider, vscode.Disp
 
         webviewView.webview.options = {
             enableScripts: true,
-            localResourceRoots: [
-                this._context.extensionUri
-            ]
+            localResourceRoots: [this._context.extensionUri]
         };
 
         webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
 
-        // Handle messages from the webview
         webviewView.webview.onDidReceiveMessage(
             message => {
                 switch (message.type) {
@@ -53,16 +50,11 @@ export class StyleProfileView implements vscode.WebviewViewProvider, vscode.Disp
      */
     async updateContent(data: any): Promise<void> {
         if (!data) {
-            return; // Handle null/undefined gracefully
+            return;
         }
-
         this._currentData = data;
-        
         if (this._view) {
-            await this._view.webview.postMessage({
-                type: 'update',
-                data: data
-            });
+            this._view.webview.html = this._getHtmlForWebview(this._view.webview);
         }
     }
 
@@ -72,10 +64,6 @@ export class StyleProfileView implements vscode.WebviewViewProvider, vscode.Disp
     async refresh(): Promise<void> {
         if (this._view) {
             this._view.webview.html = this._getHtmlForWebview(this._view.webview);
-            
-            if (this._currentData) {
-                await this.updateContent(this._currentData);
-            }
         }
     }
 
@@ -83,15 +71,44 @@ export class StyleProfileView implements vscode.WebviewViewProvider, vscode.Disp
      * Get webview content
      */
     async getWebviewContent(): Promise<string> {
-        if (this._view) {
-            return this._getHtmlForWebview(this._view.webview);
-        }
-        return this._getHtmlForWebview(null as any);
+        return this._getHtmlForWebview(this._view?.webview as vscode.Webview);
     }
 
     /**
      * Generate HTML content for the webview
      */
+    private _renderContent(): string {
+        if (!this._currentData || Object.keys(this._currentData).length === 0) {
+            return `
+                <div class="empty-state">
+                    <p>No style analysis available</p>
+                    <button class="analyze-btn" onclick="analyze()">Analyze Current Document</button>
+                </div>
+            `;
+        }
+
+        const style = this._currentData.style || 'Unknown';
+        const confidence = this._currentData.confidence || 0;
+        const confidencePercent = Math.round(confidence * 100);
+
+        return `
+            <div class="profile-section">
+                <div class="profile-item">
+                    <span class="profile-label">Style:</span>
+                    <span class="profile-value">${style}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Confidence:</span>
+                    <span class="profile-value">${confidencePercent}%</span>
+                </div>
+                <div class="confidence-bar">
+                    <div class="confidence-fill" style="width: ${confidencePercent}%"></div>
+                </div>
+            </div>
+            <button class="analyze-btn" onclick="analyze()">Re-analyze Document</button>
+        `;
+    }
+
     private _getHtmlForWebview(webview: vscode.Webview): string {
         return `<!DOCTYPE html>
 <html lang="en">
@@ -230,10 +247,7 @@ export class StyleProfileView implements vscode.WebviewViewProvider, vscode.Disp
         </div>
         
         <div id="content">
-            <div class="empty-state">
-                <p>No style analysis available</p>
-                <button class="analyze-btn" onclick="analyze()">Analyze Current Document</button>
-            </div>
+            ${this._renderContent()}
         </div>
     </div>
 
@@ -247,51 +261,6 @@ export class StyleProfileView implements vscode.WebviewViewProvider, vscode.Disp
         function analyze() {
             vscode.postMessage({ type: 'analyze' });
         }
-        
-        window.addEventListener('message', event => {
-            const message = event.data;
-            
-            switch (message.type) {
-                case 'update':
-                    updateContent(message.data);
-                    break;
-            }
-        });
-        
-        function updateContent(data) {
-            const content = document.getElementById('content');
-            
-            if (!data || Object.keys(data).length === 0) {
-                content.innerHTML = \`
-                    <div class="empty-state">
-                        <p>No style analysis available</p>
-                        <button class="analyze-btn" onclick="analyze()">Analyze Current Document</button>
-                    </div>
-                \`;
-                return;
-            }
-            
-            const style = data.style || 'Unknown';
-            const confidence = data.confidence || 0;
-            const confidencePercent = Math.round(confidence * 100);
-            
-            content.innerHTML = \`
-                <div class="profile-section">
-                    <div class="profile-item">
-                        <span class="profile-label">Style:</span>
-                        <span class="profile-value">\${style}</span>
-                    </div>
-                    <div class="profile-item">
-                        <span class="profile-label">Confidence:</span>
-                        <span class="profile-value">\${confidencePercent}%</span>
-                    </div>
-                    <div class="confidence-bar">
-                        <div class="confidence-fill" style="width: \${confidencePercent}%"></div>
-                    </div>
-                </div>
-                <button class="analyze-btn" onclick="analyze()">Re-analyze Document</button>
-            \`;
-        }
     </script>
 </body>
 </html>`;
@@ -301,7 +270,6 @@ export class StyleProfileView implements vscode.WebviewViewProvider, vscode.Disp
      * Dispose of resources
      */
     dispose(): void {
-        // Clean up resources
         this._view = undefined;
         this._currentData = null;
     }
