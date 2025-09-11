@@ -14,11 +14,16 @@ let inputManager: InputManager | undefined;
  * Implements VSC-001: Command Integration
  */
 
-export async function activate(context: vscode.ExtensionContext) {
+export interface ExtensionApi {
+    viewManager: ViewManager | undefined;
+    inputManager: InputManager | undefined;
+}
+
+export async function activate(context: vscode.ExtensionContext): Promise<ExtensionApi> {
     try {
         const tokenManager = new TokenManager(context);
-        const serviceClient = new ServiceClient(tokenManager);
-        const commandManager = new CommandManager(serviceClient, tokenManager);
+        const serviceClient = new ServiceClient();
+        const commandManager = new CommandManager();
         viewManager = new ViewManager(context);
         inputManager = new InputManager(context);
 
@@ -30,9 +35,19 @@ export async function activate(context: vscode.ExtensionContext) {
             viewManager,
             inputManager
         );
+
+        return {
+            viewManager,
+            inputManager
+        };
     } catch (error) {
         console.error('Failed to activate PseudoScribe extension:', error);
         vscode.window.showErrorMessage('Failed to activate PseudoScribe extension');
+        // Return a dummy API on failure to satisfy the type contract
+        return {
+            viewManager: undefined,
+            inputManager: undefined
+        };
     }
 }
 

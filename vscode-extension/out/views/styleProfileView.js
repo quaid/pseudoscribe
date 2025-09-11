@@ -41,12 +41,9 @@ class StyleProfileView {
         this._view = webviewView;
         webviewView.webview.options = {
             enableScripts: true,
-            localResourceRoots: [
-                this._context.extensionUri
-            ]
+            localResourceRoots: [this._context.extensionUri]
         };
         webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
-        // Handle messages from the webview
         webviewView.webview.onDidReceiveMessage(message => {
             switch (message.type) {
                 case 'refresh':
@@ -63,14 +60,11 @@ class StyleProfileView {
      */
     async updateContent(data) {
         if (!data) {
-            return; // Handle null/undefined gracefully
+            return;
         }
         this._currentData = data;
         if (this._view) {
-            await this._view.webview.postMessage({
-                type: 'update',
-                data: data
-            });
+            this._view.webview.html = this._getHtmlForWebview(this._view.webview);
         }
     }
     /**
@@ -79,23 +73,46 @@ class StyleProfileView {
     async refresh() {
         if (this._view) {
             this._view.webview.html = this._getHtmlForWebview(this._view.webview);
-            if (this._currentData) {
-                await this.updateContent(this._currentData);
-            }
         }
     }
     /**
      * Get webview content
      */
     async getWebviewContent() {
-        if (this._view) {
-            return this._getHtmlForWebview(this._view.webview);
-        }
-        return this._getHtmlForWebview(null);
+        return this._getHtmlForWebview(this._view?.webview);
     }
     /**
      * Generate HTML content for the webview
      */
+    _renderContent() {
+        if (!this._currentData || Object.keys(this._currentData).length === 0) {
+            return `
+                <div class="empty-state">
+                    <p>No style analysis available</p>
+                    <button class="analyze-btn" onclick="analyze()">Analyze Current Document</button>
+                </div>
+            `;
+        }
+        const style = this._currentData.style || 'Unknown';
+        const confidence = this._currentData.confidence || 0;
+        const confidencePercent = Math.round(confidence * 100);
+        return `
+            <div class="profile-section">
+                <div class="profile-item">
+                    <span class="profile-label">Style:</span>
+                    <span class="profile-value">${style}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Confidence:</span>
+                    <span class="profile-value">${confidencePercent}%</span>
+                </div>
+                <div class="confidence-bar">
+                    <div class="confidence-fill" style="width: ${confidencePercent}%"></div>
+                </div>
+            </div>
+            <button class="analyze-btn" onclick="analyze()">Re-analyze Document</button>
+        `;
+    }
     _getHtmlForWebview(webview) {
         return `<!DOCTYPE html>
 <html lang="en">
@@ -234,10 +251,7 @@ class StyleProfileView {
         </div>
         
         <div id="content">
-            <div class="empty-state">
-                <p>No style analysis available</p>
-                <button class="analyze-btn" onclick="analyze()">Analyze Current Document</button>
-            </div>
+            ${this._renderContent()}
         </div>
     </div>
 
@@ -251,51 +265,6 @@ class StyleProfileView {
         function analyze() {
             vscode.postMessage({ type: 'analyze' });
         }
-        
-        window.addEventListener('message', event => {
-            const message = event.data;
-            
-            switch (message.type) {
-                case 'update':
-                    updateContent(message.data);
-                    break;
-            }
-        });
-        
-        function updateContent(data) {
-            const content = document.getElementById('content');
-            
-            if (!data || Object.keys(data).length === 0) {
-                content.innerHTML = \`
-                    <div class="empty-state">
-                        <p>No style analysis available</p>
-                        <button class="analyze-btn" onclick="analyze()">Analyze Current Document</button>
-                    </div>
-                \`;
-                return;
-            }
-            
-            const style = data.style || 'Unknown';
-            const confidence = data.confidence || 0;
-            const confidencePercent = Math.round(confidence * 100);
-            
-            content.innerHTML = \`
-                <div class="profile-section">
-                    <div class="profile-item">
-                        <span class="profile-label">Style:</span>
-                        <span class="profile-value">\${style}</span>
-                    </div>
-                    <div class="profile-item">
-                        <span class="profile-label">Confidence:</span>
-                        <span class="profile-value">\${confidencePercent}%</span>
-                    </div>
-                    <div class="confidence-bar">
-                        <div class="confidence-fill" style="width: \${confidencePercent}%"></div>
-                    </div>
-                </div>
-                <button class="analyze-btn" onclick="analyze()">Re-analyze Document</button>
-            \`;
-        }
     </script>
 </body>
 </html>`;
@@ -304,7 +273,6 @@ class StyleProfileView {
      * Dispose of resources
      */
     dispose() {
-        // Clean up resources
         this._view = undefined;
         this._currentData = null;
     }

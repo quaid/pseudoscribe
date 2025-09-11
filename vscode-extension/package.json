@@ -48,6 +48,16 @@
         "command": "pseudoscribe.showStyleProfile",
         "title": "Show Style Profile",
         "category": "PseudoScribe"
+      },
+      {
+        "command": "pseudoscribe.setApiToken",
+        "title": "Set PseudoScribe API Token",
+        "category": "PseudoScribe"
+      },
+      {
+        "command": "pseudoscribe.activate",
+        "title": "Activate PseudoScribe",
+        "category": "PseudoScribe"
       }
     ],
     "views": {
