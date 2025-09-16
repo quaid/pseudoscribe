@@ -1,42 +1,9 @@
 """BDD-style tests for tenant configuration API"""
 
 import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, text
 
-from pseudoscribe.api.app import app
 
-client = TestClient(app)
-
-@pytest.fixture(autouse=True)
-def setup_database():
-    """Set up test database before each test"""
-    engine = create_engine("postgresql://localhost/pseudoscribe")
-    
-    # Create tenant_configurations table
-    with engine.connect() as conn:
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS public.tenant_configurations (
-                tenant_id VARCHAR(255) PRIMARY KEY,
-                schema_name VARCHAR(255) UNIQUE,
-                display_name VARCHAR(255),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """))
-        conn.commit()
-        
-        # Clean up existing data
-        conn.execute(text("DELETE FROM public.tenant_configurations"))
-        conn.commit()
-    
-    yield
-    
-    # Clean up after tests
-    with engine.connect() as conn:
-        conn.execute(text("DELETE FROM public.tenant_configurations"))
-        conn.commit()
-
-def test_create_tenant():
+def test_create_tenant(client):
     """
     Scenario: Create new tenant configuration
     Given valid tenant configuration
@@ -51,7 +18,7 @@ def test_create_tenant():
     }
     
     # When
-    response = client.post("/tenants/", json=tenant_data)
+    response = client.post("/tenants", json=tenant_data)
     
     # Then
     assert response.status_code == 200
@@ -61,7 +28,7 @@ def test_create_tenant():
     assert data["display_name"] == tenant_data["display_name"]
     assert "created_at" in data
 
-def test_create_duplicate_tenant():
+def test_create_duplicate_tenant(client):
     """
     Scenario: Create duplicate tenant configuration
     Given existing tenant configuration
@@ -73,16 +40,16 @@ def test_create_duplicate_tenant():
         "tenant_id": "test-tenant-1",
         "schema_name": "tenant_1"
     }
-    client.post("/tenants/", json=tenant_data)
+    client.post("/tenants", json=tenant_data)
     
     # When
-    response = client.post("/tenants/", json=tenant_data)
+    response = client.post("/tenants", json=tenant_data)
     
     # Then
     assert response.status_code == 400
     assert "already exists" in response.json()["detail"]
 
-def test_get_tenant():
+def test_get_tenant(client):
     """
     Scenario: Get tenant configuration
     Given existing tenant configuration
@@ -94,7 +61,7 @@ def test_get_tenant():
         "tenant_id": "test-tenant-1",
         "schema_name": "tenant_1"
     }
-    client.post("/tenants/", json=tenant_data)
+    client.post("/tenants", json=tenant_data)
     
     # When
     response = client.get("/tenants/test-tenant-1")
@@ -105,7 +72,7 @@ def test_get_tenant():
     assert data["tenant_id"] == tenant_data["tenant_id"]
     assert data["schema_name"] == tenant_data["schema_name"]
 
-def test_get_nonexistent_tenant():
+def test_get_nonexistent_tenant(client):
     """
     Scenario: Get nonexistent tenant configuration
     Given no tenant configuration
@@ -119,7 +86,7 @@ def test_get_nonexistent_tenant():
     assert response.status_code == 404
     assert "not found" in response.json()["detail"]
 
-def test_list_tenants():
+def test_list_tenants(client):
     """
     Scenario: List tenant configurations
     Given multiple tenant configurations
@@ -132,10 +99,10 @@ def test_list_tenants():
         {"tenant_id": "test-2", "schema_name": "tenant_2"}
     ]
     for tenant in tenants:
-        client.post("/tenants/", json=tenant)
+        client.post("/tenants", json=tenant)
     
     # When
-    response = client.get("/tenants/")
+    response = client.get("/tenants")
     
     # Then
     assert response.status_code == 200
@@ -143,7 +110,7 @@ def test_list_tenants():
     assert len(data) == 2
     assert {t["tenant_id"] for t in data} == {"test-1", "test-2"}
 
-def test_delete_tenant():
+def test_delete_tenant(client):
     """
     Scenario: Delete tenant configuration
     Given existing tenant configuration
@@ -155,7 +122,7 @@ def test_delete_tenant():
         "tenant_id": "test-tenant-1",
         "schema_name": "tenant_1"
     }
-    client.post("/tenants/", json=tenant_data)
+    client.post("/tenants", json=tenant_data)
     
     # When
     response = client.delete("/tenants/test-tenant-1")

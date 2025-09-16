@@ -1,6 +1,7 @@
 """Tests for ModelManager"""
 
 import pytest
+import os
 from fastapi import HTTPException
 from httpx import HTTPStatusError
 import asyncio
@@ -23,7 +24,8 @@ class AsyncContextManagerMock:
 @pytest_asyncio_fixture
 async def model_manager():
     """Fixture for ModelManager"""
-    return ModelManager("http://localhost:11434")
+    ollama_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    return ModelManager(ollama_url)
 
 @pytest.mark.asyncio
 async def test_list_available_models(model_manager, mocker):

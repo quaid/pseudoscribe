@@ -1,56 +1,48 @@
 """BDD-style tests for role management API"""
 
 import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 
-from pseudoscribe.api.app import app
-
-client = TestClient(app)
 
 @pytest.fixture(autouse=True)
-def setup_database():
-    """Set up test database before each test"""
-    engine = create_engine("postgresql://localhost/pseudoscribe")
-    
-    # Create test tenant and schema
-    with engine.connect() as conn:
-        # Insert test tenant if not exists
-        conn.execute(text("""
-            INSERT INTO public.tenant_configurations (tenant_id, schema_name)
-            VALUES ('test-tenant', 'tenant_test_tenant')
-            ON CONFLICT (tenant_id) DO NOTHING
-        """))
-        conn.commit()
-        
-        # Create tenant schema
-        conn.execute(text("CREATE SCHEMA IF NOT EXISTS tenant_test_tenant"))
-        conn.commit()
-        
-        # Create roles table in tenant schema
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS tenant_test_tenant.roles (
-                id SERIAL PRIMARY KEY,
-                name VARCHAR(255) NOT NULL,
-                description TEXT,
-                permissions JSONB NOT NULL DEFAULT '[]'::jsonb,
-                tenant_id VARCHAR(255) NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(name)
-            )
-        """))
-        conn.commit()
-    
+def setup_role_test_schema(db_session):
+    """Set up the test tenant and schema for role management tests."""
+    tenant_id = "test-tenant"
+    schema_name = f"tenant_{tenant_id.replace('-', '_')}"
+
+    # Create test tenant
+    db_session.execute(text("""
+        INSERT INTO public.tenant_configurations (tenant_id, schema_name)
+        VALUES (:tenant_id, :schema_name)
+        ON CONFLICT (tenant_id) DO NOTHING
+    """), {"tenant_id": tenant_id, "schema_name": schema_name})
+    db_session.commit()
+
+    # Create tenant schema and roles table
+    db_session.execute(text(f"CREATE SCHEMA IF NOT EXISTS {schema_name}"))
+    db_session.execute(text(f"""
+        CREATE TABLE IF NOT EXISTS {schema_name}.roles (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            description TEXT,
+            permissions JSONB NOT NULL DEFAULT '[]'::jsonb,
+            tenant_id VARCHAR(255) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(name)
+        )
+    """))
+    db_session.commit()
+
     yield
-    
+
     # Clean up
-    with engine.connect() as conn:
-        conn.execute(text("DROP SCHEMA IF EXISTS tenant_test_tenant CASCADE"))
-        conn.commit()
+    db_session.execute(text(f"DROP SCHEMA IF EXISTS {schema_name} CASCADE"))
+    db_session.commit()
+
 
 @pytest.mark.asyncio
-async def test_create_role():
+async def test_create_role(client):
     """
     Scenario: Create a new role
     Given a valid tenant
@@ -77,7 +69,7 @@ async def test_create_role():
     assert "id" in data
 
 @pytest.mark.asyncio
-async def test_create_duplicate_role():
+async def test_create_duplicate_role(client):
     """
     Scenario: Create a duplicate role
     Given an existing role
@@ -101,7 +93,7 @@ async def test_create_duplicate_role():
     assert "Role already exists" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_get_role():
+async def test_get_role(client):
     """
     Scenario: Get role details
     Given an existing role
@@ -129,7 +121,7 @@ async def test_get_role():
     assert data["permissions"] == role_data["permissions"]
 
 @pytest.mark.asyncio
-async def test_list_roles():
+async def test_list_roles(client):
     """
     Scenario: List all roles
     Given multiple existing roles
@@ -163,7 +155,7 @@ async def test_list_roles():
     assert {role["name"] for role in data} == {role["name"] for role in roles}
 
 @pytest.mark.asyncio
-async def test_update_role():
+async def test_update_role(client):
     """
     Scenario: Update role details
     Given an existing role
@@ -196,7 +188,7 @@ async def test_update_role():
     assert data["permissions"] == update_data["permissions"]
 
 @pytest.mark.asyncio
-async def test_delete_role():
+async def test_delete_role(client):
     """
     Scenario: Delete a role
     Given an existing role

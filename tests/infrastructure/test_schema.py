@@ -1,6 +1,7 @@
 """BDD Tests for Multi-tenant Schema Management"""
 
 import pytest
+import os
 from pseudoscribe.infrastructure.schema import SchemaManager, TenantConfig
 
 @pytest.mark.asyncio
@@ -21,7 +22,8 @@ class TestSchemaCreation:
         And baseline tables added
         """
         # Given
-        manager = SchemaManager("postgresql://localhost/pseudoscribe")
+        db_url = os.getenv("DATABASE_URL", "postgresql://localhost/pseudoscribe")
+        manager = SchemaManager(db_url)
         tenant = TenantConfig(
             tenant_id="test-tenant-1",
             schema_name="tenant_1",
@@ -45,7 +47,8 @@ class TestSchemaCreation:
         Then data is isolated between tenants
         """
         # Given
-        manager = SchemaManager("postgresql://localhost/pseudoscribe")
+        db_url = os.getenv("DATABASE_URL", "postgresql://localhost/pseudoscribe")
+        manager = SchemaManager(db_url)
         tenant1 = TenantConfig(
             tenant_id="test-tenant-1",
             schema_name="tenant_1"

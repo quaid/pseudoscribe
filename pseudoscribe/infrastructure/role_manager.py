@@ -3,6 +3,7 @@
 from datetime import datetime, UTC
 from typing import List, Optional
 import json
+import os
 
 from fastapi import HTTPException
 from sqlalchemy import create_engine, text
@@ -13,9 +14,10 @@ from pseudoscribe.models.role import RoleCreate, RoleResponse, RoleUpdate
 class RoleManager:
     """Manages role operations"""
     
-    def __init__(self, database_url: str = "postgresql://localhost/pseudoscribe"):
+    def __init__(self, database_url: str = None):
         """Initialize role manager with database connection"""
-        self.engine = create_engine(database_url)
+        db_url = database_url or os.getenv("DATABASE_URL", "postgresql://localhost/pseudoscribe")
+        self.engine = create_engine(db_url)
     
     async def create_role(self, tenant_id: str, role: RoleCreate) -> RoleResponse:
         """Create a new role for a tenant"""

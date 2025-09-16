@@ -1,29 +1,31 @@
 # VSCode Extension Testing Container
-FROM node:18-alpine
+FROM node:18
 
 WORKDIR /app
 
 # Install system dependencies for VSCode testing
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     xvfb \
-    gtk+3.0 \
-    nss \
-    alsa-lib \
-    at-spi2-atk \
-    cups-libs \
-    drm \
-    gtk+3.0 \
-    libxcomposite \
-    libxdamage \
-    libxrandr \
-    libxss \
-    libxtst \
-    pango \
+    libgtk-3-0 \
+    libnss3 \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    libxss1 \
+    libxtst6 \
+    libpango-1.0-0 \
+    libgbm1 \
     git \
     python3 \
     make \
     g++ \
-    curl
+    curl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set display for headless testing
 ENV DISPLAY=:99
@@ -40,15 +42,8 @@ COPY src/ ./src/
 # Build the extension
 RUN npm run compile
 
-# Create test script
-RUN echo '#!/bin/sh\n\
-set -e\n\
-echo "Starting Xvfb..."\n\
-Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &\n\
-sleep 2\n\
-echo "Running extension tests..."\n\
-npm test\n\
-echo "Tests completed successfully"' > /app/run-tests.sh
+# Copy the test script
+COPY run-tests.sh /app/run-tests.sh
 
 RUN chmod +x /app/run-tests.sh
 

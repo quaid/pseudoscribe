@@ -6,10 +6,8 @@ from starlette.datastructures import State
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.responses import Response
 
+from pseudoscribe.api.dependencies import SessionLocal
 from pseudoscribe.infrastructure.tenant_config import TenantConfigManager
-
-# Initialize tenant config manager
-manager = TenantConfigManager("postgresql://localhost/pseudoscribe")
 
 def get_tenant_id(request: Request) -> str:
     """Extract tenant ID from request headers"""
@@ -21,41 +19,37 @@ def get_current_schema(request: Request) -> str:
         raise HTTPException(status_code=500, detail="Schema not set")
     return request.state.schema
 
-async def get_schema_for_tenant(tenant_id: str) -> str:
-    """Get schema name for a tenant"""
-    tenant = await manager.get_tenant(tenant_id)
-    if not tenant:
-        raise HTTPException(status_code=404, detail="Tenant not found")
-    return tenant.schema_name
-
 class TenantMiddleware(BaseHTTPMiddleware):
     """Middleware for tenant isolation"""
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
-        """Process request and ensure tenant isolation"""
-        # Initialize request state if not exists
+        """Process request and ensure tenant isolation."""
         if not hasattr(request, "state"):
             request.state = State()
 
-        # Skip tenant check for tenant management and health endpoints
-        if request.url.path.startswith(('/tenants', '/health', '/docs', '/redoc', '/openapi.json')):
-            return await call_next(request)
+        exempt_paths = ["/health", "/docs", "/openapi.json", "/redoc"]
+        # The router for tenants is at /tenants, so we should exempt paths starting with it.
+        if request.url.path in exempt_paths or request.url.path.startswith("/tenants"):
+            response = await call_next(request)
+            return response
 
-        # Ensure tenant ID is provided
         tenant_id = get_tenant_id(request)
         if not tenant_id:
-            raise HTTPException(
-                status_code=400,
-                detail="X-Tenant-ID header is required"
+            # For non-exempt paths, tenant ID is required.
+            return JSONResponse(
+                status_code=400, content={"detail": "X-Tenant-ID header is required"}
             )
 
-        # Get schema for tenant
+        db = SessionLocal()
         try:
-            schema = await get_schema_for_tenant(tenant_id)
-            request.state.schema = schema
-            return await call_next(request)
-        except HTTPException as e:
-            return JSONResponse(
-                status_code=e.status_code,
-                content={"detail": e.detail}
-            )
+            manager = TenantConfigManager()
+            tenant = await manager.get_tenant(db, tenant_id)
+            if not tenant:
+                return JSONResponse(
+                    status_code=403, content={"detail": "Invalid tenant ID"}
+                )
+            request.state.schema = tenant.schema_name
+            response = await call_next(request)
+            return response
+        finally:
+            db.close()

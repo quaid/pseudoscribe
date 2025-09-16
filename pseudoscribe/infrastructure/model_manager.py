@@ -52,14 +52,14 @@ class ModelManager:
     - Implements request timeouts
     - Isolates model operations
     """
-    def __init__(self, base_url: str = "http://localhost:11434"):
+    def __init__(self, base_url: str = None):
         """Initialize the model manager.
         
         Args:
             base_url: URL for the model service
         """
-        self.base_url = base_url
-        self.client = httpx.AsyncClient(base_url=base_url, timeout=30.0)
+        self.base_url = base_url or os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        self.client = httpx.AsyncClient(base_url=self.base_url, timeout=30.0)
         self.loaded_models = {}
         self.vector_store = VectorStore()
         self.vector_store.initialize()

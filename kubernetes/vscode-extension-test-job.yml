@@ -7,7 +7,8 @@ spec:
     spec:
       containers:
         - name: vscode-extension-test
-          image: pseudoscribe/vscode-extension:latest # Placeholder - will be built by CI/CD
+          image: pseudoscribe/vscode-extension-test:latest
+          imagePullPolicy: Never
           command: ["/app/run-tests.sh"]
           env:
             - name: DISPLAY
