@@ -61,9 +61,7 @@ class StyleProfiler:
         
         try:
             # Generate vector representation of the text
-            # In a real implementation, this would be awaited
-            # For testing, we're using a mock that returns directly
-            vector = self.model_manager.generate_vector.return_value
+            vector = await self.model_manager.generate_vectors(text)
             
             # Create full profile
             profile = self._create_style_profile(text, vector)

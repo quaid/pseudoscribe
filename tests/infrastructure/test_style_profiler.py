@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, AsyncMock, patch
 import asyncio
 from pseudoscribe.infrastructure.style_profiler import StyleProfiler
 
@@ -19,7 +19,7 @@ class TestStyleProfiler:
         # Arrange
         text = "This is a sample text for style analysis. It should have certain characteristics."
         mock_vector = np.array([0.1, 0.2, 0.3])
-        style_profiler.model_manager.generate_vector.return_value = mock_vector
+        style_profiler.model_manager.generate_vectors = AsyncMock(return_value=mock_vector)
         
         # Act
         profile = await style_profiler.analyze_text(text)

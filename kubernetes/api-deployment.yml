@@ -27,7 +27,8 @@ spec:
     spec:
       containers:
         - name: api
-          image: pseudoscribe/api:latest # Placeholder - will be built by CI/CD
+          image: pseudoscribe/api:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
           envFrom:
