@@ -94,22 +94,16 @@ export class StyleAnalysisCommands {
 
                 progress.report({ increment: 70, message: "Preparing results..." });
 
-                // Create or update analysis panel
-                if (!this.analysisPanel) {
-                    this.analysisPanel = new StyleAnalysisPanel(vscode.window.createWebviewPanel(
-                        'styleAnalysis',
-                        'Style Analysis',
-                        vscode.ViewColumn.Beside,
-                        {
-                            enableScripts: true,
-                            retainContextWhenHidden: true
-                        }
-                    ));
+                // Create or show analysis panel
+                const extensionUri = vscode.extensions.getExtension('pseudoscribe.pseudoscribe-writer-assistant')?.extensionUri;
+                if (extensionUri) {
+                    StyleAnalysisPanel.createOrShow(extensionUri);
+                    
+                    // Update panel with results
+                    if (StyleAnalysisPanel.currentPanel) {
+                        StyleAnalysisPanel.currentPanel.updateAnalysis(analysis);
+                    }
                 }
-
-                // Display results in panel
-                this.analysisPanel.updateAnalysis(analysis, text);
-                this.analysisPanel.show();
 
                 progress.report({ increment: 100 });
             });

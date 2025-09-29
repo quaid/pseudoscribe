@@ -23,7 +23,7 @@ export class ServiceClient {
     /**
      * Get service URL from VSCode configuration
      */
-    private getServiceUrl(): string {
+    public getServiceUrl(): string {
         const config = vscode.workspace.getConfiguration('pseudoscribe');
         return config.get<string>('serviceUrl') || 'http://localhost:8000';
     }
@@ -89,4 +89,52 @@ export class ServiceClient {
             throw new Error('Failed to load style profile');
         }
     }
+
+    /**
+     * Analyze style with detailed characteristics (VSC-004)
+     */
+    async analyzeStyleDetailed(text: string): Promise<any> {
+        try {
+            const response = await this.client.post('/api/v1/style/analyze', {
+                text: text
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Detailed style analysis failed:', error);
+            throw new Error('Failed to perform detailed style analysis');
+        }
+    }
+
+    /**
+     * Adapt text to specific style characteristics (VSC-004)
+     */
+    async adaptTextToStyle(text: string, styleCharacteristics: any, strength?: number): Promise<any> {
+        try {
+            const response = await this.client.post('/api/v1/style/transform', {
+                text: text,
+                target_characteristics: styleCharacteristics,
+                strength: strength || 0.5
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Text style adaptation failed:', error);
+            throw new Error('Failed to adapt text to target style');
+        }
+    }
+
+    /**
+     * Compare styles between two texts (VSC-004)
+     */
+    async compareStyles(text1: string, text2: string): Promise<any> {
+        try {
+            const response = await this.client.post('/api/v1/style/check-consistency', {
+                texts: [text1, text2]
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Style comparison failed:', error);
+            throw new Error('Failed to compare text styles');
+        }
+    }
+
 }

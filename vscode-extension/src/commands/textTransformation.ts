@@ -390,7 +390,7 @@ export class TextTransformationCommands {
      * Get predefined style profile for common styles
      */
     private getPredefinedStyleProfile(style: string): any {
-        const profiles = {
+        const profiles: { [key: string]: any } = {
             casual: {
                 complexity: 0.3,
                 formality: 0.2,
