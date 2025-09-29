@@ -91,13 +91,20 @@ export class ServiceClient {
     }
 
     /**
-     * Analyze style with detailed characteristics (VSC-004)
+     * VSC-004: Analyze style with detailed metrics
      */
     async analyzeStyleDetailed(text: string): Promise<any> {
         try {
             const response = await this.client.post('/api/v1/style/analyze', {
-                text: text
+                content: text,
+                include_metrics: true,
+                include_suggestions: true
+            }, {
+                headers: {
+                    'X-Tenant-ID': 'vscode-extension'
+                }
             });
+            
             return response.data;
         } catch (error) {
             console.error('Detailed style analysis failed:', error);
@@ -106,15 +113,21 @@ export class ServiceClient {
     }
 
     /**
-     * Adapt text to specific style characteristics (VSC-004)
+     * VSC-004: Transform text to match target style profile
      */
-    async adaptTextToStyle(text: string, styleCharacteristics: any, strength?: number): Promise<any> {
+    async adaptTextToStyle(text: string, targetProfile: any, strength: number = 0.7): Promise<any> {
         try {
             const response = await this.client.post('/api/v1/style/transform', {
-                text: text,
-                target_characteristics: styleCharacteristics,
-                strength: strength || 0.5
+                content: text,
+                target_style: targetProfile,
+                transformation_strength: strength,
+                preserve_meaning: true
+            }, {
+                headers: {
+                    'X-Tenant-ID': 'vscode-extension'
+                }
             });
+            
             return response.data;
         } catch (error) {
             console.error('Text style adaptation failed:', error);
@@ -123,18 +136,108 @@ export class ServiceClient {
     }
 
     /**
-     * Compare styles between two texts (VSC-004)
+     * VSC-004: Check consistency across multiple text segments
      */
-    async compareStyles(text1: string, text2: string): Promise<any> {
+    async checkConsistency(textSegments: string[]): Promise<any> {
         try {
             const response = await this.client.post('/api/v1/style/check-consistency', {
-                texts: [text1, text2]
+                text_segments: textSegments
+            }, {
+                headers: {
+                    'X-Tenant-ID': 'vscode-extension'
+                }
             });
+            
             return response.data;
         } catch (error) {
-            console.error('Style comparison failed:', error);
-            throw new Error('Failed to compare text styles');
+            console.error('Consistency check failed:', error);
+            throw new Error('Failed to check text consistency');
         }
     }
 
+    /**
+     * VSC-005: Analyze content for live suggestions
+     */
+    async analyzeLive(content: string, context: any = {}): Promise<any> {
+        try {
+            const response = await this.client.post('/api/v1/suggestions/analyze-live', {
+                content,
+                context,
+                document_type: context.document_type || 'text',
+                real_time: true
+            }, {
+                headers: {
+                    'X-Tenant-ID': 'vscode-extension'
+                }
+            });
+            
+            return response.data;
+        } catch (error) {
+            console.error('Live analysis failed:', error);
+            throw new Error('Failed to analyze content for live suggestions');
+        }
+    }
+
+    /**
+     * VSC-005: Accept a suggestion
+     */
+    async acceptSuggestion(suggestionId: string, context: any = {}): Promise<any> {
+        try {
+            const response = await this.client.post('/api/v1/suggestions/accept', {
+                suggestion_id: suggestionId,
+                context
+            }, {
+                headers: {
+                    'X-Tenant-ID': 'vscode-extension'
+                }
+            });
+            
+            return response.data;
+        } catch (error) {
+            console.error('Failed to accept suggestion:', error);
+            throw new Error('Failed to accept suggestion');
+        }
+    }
+
+    /**
+     * VSC-005: Configure suggestion display preferences
+     */
+    async configureSuggestionDisplay(config: any): Promise<any> {
+        try {
+            const response = await this.client.post('/api/v1/suggestions/display-config', {
+                ...config
+            }, {
+                headers: {
+                    'X-Tenant-ID': 'vscode-extension'
+                }
+            });
+            
+            return response.data;
+        } catch (error) {
+            console.error('Failed to configure suggestion display:', error);
+            throw new Error('Failed to configure suggestion display');
+        }
+    }
+
+    /**
+     * VSC-004: Compare styles between two text samples
+     */
+    async compareStyles(text1: string, text2: string): Promise<any> {
+        try {
+            const response = await this.client.post('/api/v1/style/compare', {
+                text1,
+                text2,
+                include_metrics: true
+            }, {
+                headers: {
+                    'X-Tenant-ID': 'vscode-extension'
+                }
+            });
+            
+            return response.data;
+        } catch (error) {
+            console.error('Style comparison failed:', error);
+            throw new Error('Failed to compare styles');
+        }
+    }
 }

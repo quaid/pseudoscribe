@@ -97,12 +97,10 @@ export class StyleAnalysisCommands {
                 // Create or show analysis panel
                 const extensionUri = vscode.extensions.getExtension('pseudoscribe.pseudoscribe-writer-assistant')?.extensionUri;
                 if (extensionUri) {
-                    StyleAnalysisPanel.createOrShow(extensionUri);
-                    
-                    // Update panel with results
-                    if (StyleAnalysisPanel.currentPanel) {
-                        StyleAnalysisPanel.currentPanel.updateAnalysis(analysis);
-                    }
+                    StyleAnalysisPanel.createOrShow(extensionUri, { analysis, text });
+                } else {
+                    // Fallback if extension URI is not available
+                    vscode.window.showInformationMessage(`Analysis complete: ${this.formatStyleSummary(analysis)}`);
                 }
 
                 progress.report({ increment: 100 });
@@ -426,6 +424,31 @@ export class StyleAnalysisCommands {
             </body>
             </html>
         `;
+    }
+
+    /**
+     * Format style analysis for display
+     */
+    private formatStyleSummary(analysis: any): string {
+        if (!analysis) return 'No analysis data';
+        
+        const metrics = analysis.metrics || analysis;
+        const parts = [];
+        
+        if (metrics.complexity !== undefined) {
+            parts.push(`Complexity: ${(metrics.complexity * 100).toFixed(0)}%`);
+        }
+        if (metrics.formality !== undefined) {
+            parts.push(`Formality: ${(metrics.formality * 100).toFixed(0)}%`);
+        }
+        if (metrics.tone !== undefined) {
+            parts.push(`Tone: ${(metrics.tone * 100).toFixed(0)}%`);
+        }
+        if (metrics.readability !== undefined) {
+            parts.push(`Readability: ${(metrics.readability * 100).toFixed(0)}%`);
+        }
+        
+        return parts.length > 0 ? parts.join(', ') : 'Analysis complete';
     }
 
     /**
