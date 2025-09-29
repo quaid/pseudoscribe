@@ -111,6 +111,53 @@ class ServiceClient {
             throw new Error('Failed to load style profile');
         }
     }
+    /**
+     * Analyze style with detailed characteristics (VSC-004)
+     */
+    async analyzeStyleDetailed(text) {
+        try {
+            const response = await this.client.post('/api/v1/style/analyze', {
+                text: text
+            });
+            return response.data;
+        }
+        catch (error) {
+            console.error('Detailed style analysis failed:', error);
+            throw new Error('Failed to perform detailed style analysis');
+        }
+    }
+    /**
+     * Adapt text to specific style characteristics (VSC-004)
+     */
+    async adaptTextToStyle(text, styleCharacteristics, strength) {
+        try {
+            const response = await this.client.post('/api/v1/style/transform', {
+                text: text,
+                target_characteristics: styleCharacteristics,
+                strength: strength || 0.5
+            });
+            return response.data;
+        }
+        catch (error) {
+            console.error('Text style adaptation failed:', error);
+            throw new Error('Failed to adapt text to target style');
+        }
+    }
+    /**
+     * Compare styles between two texts (VSC-004)
+     */
+    async compareStyles(text1, text2) {
+        try {
+            const response = await this.client.post('/api/v1/style/check-consistency', {
+                texts: [text1, text2]
+            });
+            return response.data;
+        }
+        catch (error) {
+            console.error('Style comparison failed:', error);
+            throw new Error('Failed to compare text styles');
+        }
+    }
 }
 exports.ServiceClient = ServiceClient;
 //# sourceMappingURL=serviceClient.js.map
