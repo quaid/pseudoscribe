@@ -24,13 +24,21 @@ class GenerationResponse(BaseModel):
 class OllamaService:
     """Service for interacting with Ollama AI service"""
     
-    def __init__(self, base_url: str = "http://localhost:11434", timeout: float = 30.0):
+    def __init__(self, base_url: str = None, timeout: float = 30.0):
         """Initialize Ollama service
         
         Args:
-            base_url: URL where Ollama is running
+            base_url: URL where Ollama is running (defaults to environment-appropriate URL)
             timeout: Timeout for requests in seconds
         """
+        import os
+        
+        # Use environment-appropriate default URL
+        if base_url is None:
+            # In container environment, use Kubernetes service name
+            # In local development, use localhost
+            base_url = os.getenv("OLLAMA_BASE_URL", "http://ollama-svc:11434")
+        
         self.base_url = base_url
         self.timeout = timeout
         self.client = httpx.AsyncClient(base_url=base_url, timeout=timeout)
