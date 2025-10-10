@@ -62,7 +62,7 @@ def get_tenant_id(x_tenant_id: Optional[str] = Header(None, alias="X-Tenant-ID")
 
 
 # Dependency to get Ollama service instance
-async def get_ollama_service() -> OllamaService:
+def get_ollama_service() -> OllamaService:
     """Get Ollama service instance"""
     return OllamaService()
 
