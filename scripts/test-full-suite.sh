@@ -48,21 +48,21 @@ fi
 echo ""
 echo "=== PERFORMANCE TESTS ==="
 total_tests=$((total_tests + 1))
-if run_test_simple "tests/api/test_vsc007_performance_optimization.py::TestPerformanceAPI::test_performance_metrics_endpoint" "Performance Metrics"; then
+if run_test_simple "tests/api/test_performance.py::TestPerformanceAPI::test_performance_metrics_endpoint" "Performance Metrics"; then
     passed_tests=$((passed_tests + 1))
 else
     failed_tests=$((failed_tests + 1))
 fi
 
 total_tests=$((total_tests + 1))
-if run_test_simple "tests/api/test_vsc007_performance_optimization.py::TestPerformanceAPI::test_optimization_recommendations_endpoint" "Performance Optimization"; then
+if run_test_simple "tests/api/test_performance.py::TestPerformanceAPI::test_optimization_recommendations_endpoint" "Performance Optimization"; then
     passed_tests=$((passed_tests + 1))
 else
     failed_tests=$((failed_tests + 1))
 fi
 
 total_tests=$((total_tests + 1))
-if run_test_simple "tests/api/test_vsc007_performance_optimization.py::TestPerformanceAPI::test_performance_optimization_endpoint" "Performance Optimization Endpoint"; then
+if run_test_simple "tests/api/test_performance.py::TestPerformanceAPI::test_performance_optimization_endpoint" "Performance Optimization Endpoint"; then
     passed_tests=$((passed_tests + 1))
 else
     failed_tests=$((failed_tests + 1))
@@ -72,14 +72,14 @@ fi
 echo ""
 echo "=== CORE API TESTS ==="
 total_tests=$((total_tests + 1))
-if run_test_simple "tests/api/test_vsc004_style_analysis.py::TestRealTimeStyleAnalysis" "VSC-004 Real-Time Style Analysis"; then
+if run_test_simple "tests/api/test_style_analysis.py::TestRealTimeStyleAnalysis" "Style Analysis"; then
     passed_tests=$((passed_tests + 1))
 else
     failed_tests=$((failed_tests + 1))
 fi
 
 total_tests=$((total_tests + 1))
-if run_test_simple "tests/api/test_vsc005_live_suggestions.py::TestRealTimeContentAnalysis" "VSC-005 Real-Time Content Analysis"; then
+if run_test_simple "tests/api/test_live_suggestions.py::TestRealTimeContentAnalysis" "Live Suggestions"; then
     passed_tests=$((passed_tests + 1))
 else
     failed_tests=$((failed_tests + 1))
@@ -89,7 +89,7 @@ fi
 echo ""
 echo "=== COLLABORATION TESTS ==="
 total_tests=$((total_tests + 1))
-if run_test_simple "tests/api/test_vsc006_collaboration.py::TestVSC006Collaboration" "VSC-006 Collaboration"; then
+if run_test_simple "tests/api/test_collaboration.py::TestVSC006Collaboration" "Collaboration"; then
     passed_tests=$((passed_tests + 1))
 else
     failed_tests=$((failed_tests + 1))
