@@ -13,6 +13,7 @@ from pseudoscribe.infrastructure.style_adapter import StyleAdapter
 from pseudoscribe.infrastructure.style_checker import StyleChecker
 from pseudoscribe.infrastructure.style_profiler import StyleProfiler
 from pseudoscribe.infrastructure.tenant_config import TenantConfigManager
+from pseudoscribe.infrastructure.ollama_service import OllamaService
 
 # Database setup
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://localhost/pseudoscribe")
@@ -41,6 +42,12 @@ def get_role_manager() -> RoleManager:
 def get_tenant_config_manager() -> TenantConfigManager:
     """Get tenant config manager instance"""
     return TenantConfigManager()
+
+
+@lru_cache()
+def get_ollama_service() -> OllamaService:
+    """Get Ollama service instance"""
+    return OllamaService()
 
 
 @lru_cache()

