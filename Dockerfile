@@ -22,6 +22,7 @@ COPY --chmod=755 pseudoscribe/api/ /app/pseudoscribe/api/
 COPY --chmod=755 pseudoscribe/infrastructure/ /app/pseudoscribe/infrastructure/
 COPY --chmod=755 pseudoscribe/models/ /app/pseudoscribe/models/
 COPY tests/ /app/tests/
+COPY scripts/ /app/scripts/
 COPY setup.py .
 COPY alembic.ini .
 COPY migrations/ ./migrations/

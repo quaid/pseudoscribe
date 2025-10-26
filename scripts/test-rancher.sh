@@ -72,6 +72,25 @@ main() {
     fi
     log_success "All deployments are ready"
 
+    # Set up test models - FIRST CLASS TDD ARTIFACT
+    log_info "Setting up test models for TDD environment..."
+    kubectl run model-setup --rm -i --restart=Never \
+        --image=pseudoscribe/api:latest \
+        --command -- python scripts/setup-test-models.py --env test --validate-only
+    
+    if [ $? -ne 0 ]; then
+        log_info "Test models not available, loading them..."
+        kubectl run model-setup --rm -i --restart=Never \
+            --image=pseudoscribe/api:latest \
+            --command -- python scripts/setup-test-models.py --env test
+        
+        if [ $? -ne 0 ]; then
+            log_error "Failed to set up test models - TDD environment invalid"
+            exit 1
+        fi
+    fi
+    log_success "Test models ready for TDD"
+
     # Run backend tests
     log_info "Running backend tests..."
     cat <<EOF | kubectl apply -f -
