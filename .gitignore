@@ -60,3 +60,14 @@ logs/
 temp/
 .env.*
 !.env.example
+
+# Temporary planning and agent files (DO NOT COMMIT)
+*SPRINT*.md
+*STATUS*.md
+*HANDOFF*.md
+*CLEANUP*.md
+*ASSESSMENT*.md
+*OPTION_*.md
+*AUDIT*.md
+CLOUD_DEPLOYMENT_PLAN.md
+USER_STORY_COMPLETION_ASSESSMENT.md
