@@ -877,6 +877,54 @@ mindmap
    2. Quality Tests: Output
    3. Learning Tests: Feedback
 
+10. **Production-Ready VectorGenerator** (5 points)
+   *Type*: Feature
+   *Branch*: `feature/AI-010`
+   *Dependencies*: AI-004
+   
+   **BDD Scenarios**:
+   ```gherkin
+   Feature: Vector Generation
+   
+   Scenario: Generate embeddings for text
+     Given I have text content to embed
+     When I generate vector embeddings
+     Then embeddings are created with correct dimensions
+     And performance is under 1s per fragment
+   
+   Scenario: Cache frequently used embeddings
+     Given I have previously embedded text
+     When I request embeddings again
+     Then cached embeddings are returned
+     And response time is under 100ms
+   
+   Scenario: Multiple embedding models
+     Given I have different embedding models available
+     When I select a specific model
+     Then embeddings use that model
+     And dimensions match model specifications
+   ```
+   
+   **User Stories**:
+   - As a developer, I need real vector generation (not stubs)
+   - As a system, I need efficient caching for performance
+   - As an admin, I need support for multiple embedding models
+   
+   **Acceptance Criteria**:
+   - [ ] Real API calls to embedding models (no stubs/mocks)
+   - [ ] Integration with ModelManager for model selection
+   - [ ] Support for multiple embedding models and dimensions
+   - [ ] Caching for frequently used embeddings
+   - [ ] Performance under 1s per text fragment
+   - [ ] Comprehensive error handling and logging
+   - [ ] Complete unit and integration test coverage
+   
+   **Testing Strategy**:
+   1. Unit Tests: Embedding generation logic
+   2. Integration Tests: ModelManager integration
+   3. Performance Tests: SLA compliance (<1s per fragment)
+   4. Cache Tests: Hit/miss scenarios and invalidation
+
 ### Epic 4: Knowledge Management
 **Value Statement**: Create and maintain knowledge structures from content
 

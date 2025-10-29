@@ -214,6 +214,50 @@
           "points": 3,
           "type": "Feature",
           "branch": "feature/AI-009"
+        },
+        {
+          "id": "AI-010",
+          "name": "Production-Ready VectorGenerator",
+          "points": 5,
+          "type": "Feature",
+          "branch": "feature/AI-010",
+          "dependencies": ["AI-004"],
+          "bddScenarios": [
+            {
+              "feature": "Vector Generation",
+              "scenarios": [
+                {
+                  "name": "Generate embeddings for text",
+                  "given": "text content to embed",
+                  "when": "generating vector embeddings",
+                  "then": "embeddings are created with correct dimensions",
+                  "and": "performance is under 1s per fragment"
+                },
+                {
+                  "name": "Cache frequently used embeddings",
+                  "given": "previously embedded text",
+                  "when": "requesting embeddings again",
+                  "then": "cached embeddings are returned",
+                  "and": "response time is under 100ms"
+                }
+              ]
+            }
+          ],
+          "acceptanceCriteria": [
+            "Real API calls to embedding models (no stubs)",
+            "Integration with ModelManager",
+            "Support for multiple embedding models",
+            "Caching for frequently used embeddings",
+            "Performance under 1s per text fragment",
+            "Comprehensive error handling",
+            "Complete test coverage"
+          ],
+          "testStrategy": [
+            "Unit Tests: Embedding generation",
+            "Integration Tests: ModelManager integration",
+            "Performance Tests: SLA compliance",
+            "Cache Tests: Hit/miss scenarios"
+          ]
         }
       ]
     },
