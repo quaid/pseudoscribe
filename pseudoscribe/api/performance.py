@@ -46,6 +46,7 @@ class MetricsResponse(BaseModel):
     timestamp: str
     uptime: float
     monitoring_active: bool
+    services: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Service-specific metrics (e.g., Ollama)")
 
 
 class SLAStatusResponse(BaseModel):
@@ -90,7 +91,8 @@ async def get_performance_metrics(tenant_id: str = Depends(get_tenant_id)):
             response_times=metrics.get('response_times', {}),
             timestamp=metrics.get('timestamp', datetime.now().isoformat()),
             uptime=metrics.get('uptime', 0.0),
-            monitoring_active=metrics.get('monitoring_active', False)
+            monitoring_active=metrics.get('monitoring_active', False),
+            services=metrics.get('services', {})
         )
     
     except Exception as e:
