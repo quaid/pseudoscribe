@@ -27,12 +27,15 @@
 | AI-003 | Inference Pipeline | #18 | ✅ Closed | Completed ~1 month ago |
 | AI-004 | Vector Generation | #19 | ✅ Closed | Completed ~1 month ago |
 | AI-005 | Similarity Search | #20 | ✅ Closed | Completed ~1 month ago |
-| AI-006 | Context Ranking | #21 ⚠️ #57 | ⚠️ DUPLICATE | Two issues with same ID! |
-| AI-007 | Style Profiling | #22 ⚠️ #58 | ⚠️ DUPLICATE | Two issues with same ID! |
-| AI-008 | Style Checking | #23 ⚠️ #59 | ⚠️ DUPLICATE | Two issues with same ID! |
-| AI-009 | Style Adaptation | #24 ⚠️ #61 | ⚠️ DUPLICATE | Two issues with same ID! |
+| AI-006 | Context Ranking | #57 | 🔄 Open | Needs work (old #21 closed) |
+| AI-007 | Style Profiling | #58 | 🔄 Open | Needs work (old #22 closed) |
+| AI-008 | Style Checking | #59 | 🔄 Open | Needs work (old #23 closed) |
+| AI-009 | Style Adaptation | #61 | 🔄 Open | Needs work (old #24 closed) |
+| AI-010a | Real Embedding Generation | #62 | 🔄 Open | Split from AI-010 (3 pts) |
+| AI-010b | Embedding Cache & Multi-Model | #86 | 🔄 Open | Split from AI-010 (2 pts) |
 
-**⚠️ CRITICAL**: Issues #21-24 (6 months old) vs #57-59, #61 (1 month old) - Need to resolve duplicates!
+**✅ RESOLVED**: Duplicate issues #21-24 closed, using #57-59, #61  
+**📋 NEW**: AI-010 split into AI-010a (3 pts) + AI-010b (2 pts) for 3-point max compliance
 
 ### Epic 5: VSCode Extension (7 stories)
 

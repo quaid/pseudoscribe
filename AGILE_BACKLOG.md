@@ -877,20 +877,61 @@ mindmap
    2. Quality Tests: Output
    3. Learning Tests: Feedback
 
-10. **Production-Ready VectorGenerator** (5 points)
+10. **Real Embedding Generation** (3 points)
    *Type*: Feature
-   *Branch*: `feature/AI-010`
-   *Dependencies*: AI-004
+   *Branch*: `feature/AI-010a`
+   *Dependencies*: AI-001, AI-002, AI-004
    
    **BDD Scenarios**:
    ```gherkin
-   Feature: Vector Generation
+   Feature: Real Embedding Generation
    
    Scenario: Generate embeddings for text
      Given I have text content to embed
      When I generate vector embeddings
-     Then embeddings are created with correct dimensions
+     Then real embeddings are created with correct dimensions
      And performance is under 1s per fragment
+   
+   Scenario: Integration with ModelManager
+     Given ModelManager is available
+     When I request embeddings with a specific model
+     Then the model is loaded via ModelManager
+     And embeddings are generated using that model
+   
+   Scenario: Error handling
+     Given a model is unavailable
+     When attempting to generate embeddings
+     Then an appropriate error is raised
+     And the error message is descriptive
+   ```
+   
+   **User Stories**:
+   - As a developer, I need real vector embeddings (not stubs)
+   - As a system, I need integration with ModelManager
+   - As a user, I need embeddings generated within performance SLAs
+   
+   **Acceptance Criteria**:
+   - [ ] Real API calls to embedding models (no stubs)
+   - [ ] Integration with ModelManager working correctly
+   - [ ] Embeddings generated with correct dimensions
+   - [ ] Performance under 1s per text fragment
+   - [ ] Basic error handling implemented
+   - [ ] Unit and integration tests passing
+   
+   **Testing Strategy**:
+   1. Unit Tests: Embedding generation logic
+   2. Integration Tests: ModelManager integration
+   3. Performance Tests: <1s per fragment SLA
+   4. Error Tests: Graceful failure handling
+
+11. **Embedding Cache & Multi-Model** (2 points)
+   *Type*: Feature
+   *Branch*: `feature/AI-010b`
+   *Dependencies*: AI-010a
+   
+   **BDD Scenarios**:
+   ```gherkin
+   Feature: Embedding Cache & Multi-Model
    
    Scenario: Cache frequently used embeddings
      Given I have previously embedded text
@@ -903,27 +944,32 @@ mindmap
      When I select a specific model
      Then embeddings use that model
      And dimensions match model specifications
+   
+   Scenario: Cache invalidation
+     Given I have cached embeddings
+     When the cache size limit is reached
+     Then least recently used embeddings are evicted
+     And cache remains performant
    ```
    
    **User Stories**:
-   - As a developer, I need real vector generation (not stubs)
-   - As a system, I need efficient caching for performance
-   - As an admin, I need support for multiple embedding models
+   - As a system, I need caching for frequently used embeddings
+   - As a developer, I need support for multiple embedding models
+   - As an admin, I need cache metrics to monitor performance
    
    **Acceptance Criteria**:
-   - [ ] Real API calls to embedding models (no stubs/mocks)
-   - [ ] Integration with ModelManager for model selection
-   - [ ] Support for multiple embedding models and dimensions
    - [ ] Caching for frequently used embeddings
-   - [ ] Performance under 1s per text fragment
-   - [ ] Comprehensive error handling and logging
-   - [ ] Complete unit and integration test coverage
+   - [ ] <100ms response time for cached embeddings
+   - [ ] Support for multiple embedding models
+   - [ ] Dynamic dimension handling per model
+   - [ ] Cache hit/miss metrics tracked
+   - [ ] Performance SLAs met
    
    **Testing Strategy**:
-   1. Unit Tests: Embedding generation logic
-   2. Integration Tests: ModelManager integration
-   3. Performance Tests: SLA compliance (<1s per fragment)
-   4. Cache Tests: Hit/miss scenarios and invalidation
+   1. Cache Tests: Hit/miss scenarios
+   2. Performance Tests: <100ms for cached
+   3. Multi-model Tests: Different models and dimensions
+   4. Metrics Tests: Cache statistics tracking
 
 ### Epic 4: Knowledge Management
 **Value Statement**: Create and maintain knowledge structures from content

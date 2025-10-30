@@ -216,47 +216,103 @@
           "branch": "feature/AI-009"
         },
         {
-          "id": "AI-010",
-          "name": "Production-Ready VectorGenerator",
-          "points": 5,
+          "id": "AI-010a",
+          "name": "Real Embedding Generation",
+          "points": 3,
           "type": "Feature",
-          "branch": "feature/AI-010",
-          "dependencies": ["AI-004"],
+          "branch": "feature/AI-010a",
+          "dependencies": ["AI-001", "AI-002", "AI-004"],
           "bddScenarios": [
             {
-              "feature": "Vector Generation",
+              "feature": "Real Embedding Generation",
               "scenarios": [
                 {
                   "name": "Generate embeddings for text",
                   "given": "text content to embed",
                   "when": "generating vector embeddings",
-                  "then": "embeddings are created with correct dimensions",
+                  "then": "real embeddings are created with correct dimensions",
                   "and": "performance is under 1s per fragment"
                 },
                 {
-                  "name": "Cache frequently used embeddings",
-                  "given": "previously embedded text",
-                  "when": "requesting embeddings again",
-                  "then": "cached embeddings are returned",
-                  "and": "response time is under 100ms"
+                  "name": "Integration with ModelManager",
+                  "given": "ModelManager is available",
+                  "when": "requesting embeddings with specific model",
+                  "then": "model is loaded via ModelManager",
+                  "and": "embeddings are generated using that model"
+                },
+                {
+                  "name": "Error handling",
+                  "given": "model is unavailable",
+                  "when": "attempting to generate embeddings",
+                  "then": "appropriate error is raised",
+                  "and": "error message is descriptive"
                 }
               ]
             }
           ],
           "acceptanceCriteria": [
             "Real API calls to embedding models (no stubs)",
-            "Integration with ModelManager",
-            "Support for multiple embedding models",
-            "Caching for frequently used embeddings",
+            "Integration with ModelManager working",
+            "Embeddings generated with correct dimensions",
             "Performance under 1s per text fragment",
-            "Comprehensive error handling",
-            "Complete test coverage"
+            "Basic error handling implemented",
+            "Unit and integration tests passing"
           ],
           "testStrategy": [
-            "Unit Tests: Embedding generation",
+            "Unit Tests: Embedding generation logic",
             "Integration Tests: ModelManager integration",
-            "Performance Tests: SLA compliance",
-            "Cache Tests: Hit/miss scenarios"
+            "Performance Tests: <1s per fragment SLA",
+            "Error Tests: Graceful failure handling"
+          ]
+        },
+        {
+          "id": "AI-010b",
+          "name": "Embedding Cache & Multi-Model",
+          "points": 2,
+          "type": "Feature",
+          "branch": "feature/AI-010b",
+          "dependencies": ["AI-010a"],
+          "bddScenarios": [
+            {
+              "feature": "Embedding Cache & Multi-Model",
+              "scenarios": [
+                {
+                  "name": "Cache frequently used embeddings",
+                  "given": "previously embedded text",
+                  "when": "requesting embeddings again",
+                  "then": "cached embeddings are returned",
+                  "and": "response time is under 100ms"
+                },
+                {
+                  "name": "Multiple embedding models",
+                  "given": "different embedding models available",
+                  "when": "selecting specific model",
+                  "then": "embeddings use that model",
+                  "and": "dimensions match model specifications"
+                },
+                {
+                  "name": "Cache invalidation",
+                  "given": "cached embeddings",
+                  "when": "cache size limit reached",
+                  "then": "least recently used embeddings evicted",
+                  "and": "cache remains performant"
+                }
+              ]
+            }
+          ],
+          "acceptanceCriteria": [
+            "Caching for frequently used embeddings",
+            "<100ms for cached embeddings",
+            "Support for multiple embedding models",
+            "Dynamic dimension handling",
+            "Cache hit/miss metrics tracked",
+            "Performance SLAs met"
+          ],
+          "testStrategy": [
+            "Cache Tests: Hit/miss scenarios",
+            "Performance Tests: <100ms for cached",
+            "Multi-model Tests: Different models and dimensions",
+            "Metrics Tests: Cache statistics tracking"
           ]
         }
       ]
