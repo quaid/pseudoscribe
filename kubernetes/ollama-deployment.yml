@@ -14,6 +14,43 @@ spec:
       labels:
         app: ollama
     spec:
+      initContainers:
+        - name: model-loader
+          image: ollama/ollama:latest
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              # Start ollama in background
+              ollama serve &
+              OLLAMA_PID=$!
+              
+              # Wait for ollama to be ready
+              echo "Waiting for Ollama to start..."
+              for i in $(seq 1 30); do
+                if curl -s http://localhost:11434/api/tags >/dev/null 2>&1; then
+                  echo "Ollama is ready"
+                  break
+                fi
+                echo "Waiting... ($i/30)"
+                sleep 2
+              done
+              
+              # Check if model already exists
+              if ollama list | grep -q "tinyllama:latest"; then
+                echo "Model tinyllama:latest already cached"
+              else
+                echo "Pulling tinyllama:latest model (this may take 2-3 minutes)..."
+                ollama pull tinyllama:latest
+                echo "Model cached successfully"
+              fi
+              
+              # Stop ollama
+              kill $OLLAMA_PID
+              wait $OLLAMA_PID 2>/dev/null || true
+              echo "Init complete"
+          volumeMounts:
+            - name: ollama-storage
+              mountPath: /root/.ollama
       containers:
         - name: ollama
           image: ollama/ollama:latest
@@ -22,6 +59,18 @@ spec:
           volumeMounts:
             - name: ollama-storage
               mountPath: /root/.ollama
+          readinessProbe:
+            httpGet:
+              path: /api/tags
+              port: 11434
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /api/tags
+              port: 11434
+            initialDelaySeconds: 10
+            periodSeconds: 10
       volumes:
         - name: ollama-storage
           persistentVolumeClaim:
