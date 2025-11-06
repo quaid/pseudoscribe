@@ -2,14 +2,9 @@
 BDD-style tests for VSC-004 Advanced Extension Features - Style Analysis.
 
 Following TDD workflow: Red Tests → Green Tests → Refactor
-
-NOTE: SKIPPED - autouse fixture creates tenant which hangs in test environment
 """
 
 import pytest
-
-# Skip entire file - tenant creation fixture hangs
-pytestmark = pytest.mark.skip(reason="Style analysis tests hang due to tenant creation - run separately")
 import time
 from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock
@@ -23,7 +18,7 @@ def client():
     """Create test client."""
     return TestClient(app)
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(scope="function")
 def create_test_tenant(client):
     """Fixture to create a test tenant for the style API tests."""
     tenant_data = {
@@ -33,6 +28,7 @@ def create_test_tenant(client):
     }
     response = client.post("/tenants", json=tenant_data)
     assert response.status_code in [200, 400]  # 400 if it already exists
+    return response
 
 class TestRealTimeStyleAnalysis:
     """

@@ -1,17 +1,11 @@
-"""BDD-style tests for role management API
-
-NOTE: These tests are SKIPPED because they have database setup that hangs in test environment.
-Run separately with proper database configuration.
-"""
+"""BDD-style tests for role management API"""
 
 import pytest
 from sqlalchemy import text
-
-# Skip entire file - database setup hangs in containerized test environment
-pytestmark = pytest.mark.skip(reason="Role management tests hang due to database setup - run separately")
+from unittest.mock import patch, MagicMock
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def setup_role_test_schema(db_session):
     """Set up the test tenant and schema for role management tests."""
     tenant_id = "test-tenant"
