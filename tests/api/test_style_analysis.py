@@ -41,7 +41,7 @@ class TestRealTimeStyleAnalysis:
     And the analysis should complete without blocking the editor
     """
     
-    def test_style_analysis_endpoint_exists(self, client):
+    def test_style_analysis_endpoint_exists(self, client, test_tenant):
         """RED TEST: Style analysis endpoint should exist."""
         response = client.post(
             "/api/v1/style/analyze", 
@@ -51,7 +51,7 @@ class TestRealTimeStyleAnalysis:
         # This should fail initially (RED)
         assert response.status_code != 404, "Style analysis endpoint should exist"
     
-    def test_style_analysis_returns_required_scores(self, client):
+    def test_style_analysis_returns_required_scores(self, client, test_tenant):
         """RED TEST: Analysis should return complexity, formality, tone, readability."""
         sample_text = "This is a sample paragraph for style analysis. It contains multiple sentences with varying complexity."
         
@@ -77,7 +77,7 @@ class TestRealTimeStyleAnalysis:
         assert 0.0 <= data["tone"] <= 1.0
         assert 0.0 <= data["readability"] <= 1.0
     
-    def test_style_analysis_performance_requirement(self, client):
+    def test_style_analysis_performance_requirement(self, client, test_tenant):
         """RED TEST: Analysis should complete within 2 seconds."""
         sample_text = "This is a longer sample paragraph for performance testing. " * 10
         
@@ -93,7 +93,7 @@ class TestRealTimeStyleAnalysis:
         assert response.status_code == 200
         assert (end_time - start_time) < 2.0, "Analysis should complete within 2 seconds"
     
-    def test_style_analysis_handles_empty_text(self, client):
+    def test_style_analysis_handles_empty_text(self, client, test_tenant):
         """RED TEST: Should handle edge cases gracefully."""
         response = client.post(
             "/api/v1/style/analyze",
@@ -115,7 +115,7 @@ class TestStyleBasedTransformation:
     And I should be able to undo the transformation
     """
     
-    def test_style_transformation_endpoint_exists(self, client):
+    def test_style_transformation_endpoint_exists(self, client, test_tenant):
         """RED TEST: Style transformation endpoint should exist."""
         response = client.post(
             "/api/v1/style/transform",
@@ -129,7 +129,7 @@ class TestStyleBasedTransformation:
         # This should fail initially (RED)
         assert response.status_code != 404, "Style transformation endpoint should exist"
     
-    def test_style_transformation_returns_modified_text(self, client):
+    def test_style_transformation_returns_modified_text(self, client, test_tenant):
         """RED TEST: Should return transformed text."""
         formal_text = "I am writing to formally request your assistance in this matter."
         
@@ -153,7 +153,7 @@ class TestStyleBasedTransformation:
         assert data["transformed_text"] != formal_text  # Should be different
         assert len(data["transformed_text"]) > 0
     
-    def test_style_transformation_performance_requirement(self, client):
+    def test_style_transformation_performance_requirement(self, client, test_tenant):
         """RED TEST: Transformation should complete within 3 seconds."""
         text = "This is a formal business communication that requires style transformation. " * 5
         
@@ -184,7 +184,7 @@ class TestBatchStyleConsistencyChecking:
     And the report should be navigable with click-to-jump functionality
     """
     
-    def test_batch_consistency_check_endpoint_exists(self, client):
+    def test_batch_consistency_check_endpoint_exists(self, client, test_tenant):
         """RED TEST: Batch consistency check endpoint should exist."""
         document_text = [
             "This is a formal paragraph written in professional style.",
@@ -201,7 +201,7 @@ class TestBatchStyleConsistencyChecking:
         # This should fail initially (RED)
         assert response.status_code != 404, "Batch consistency check endpoint should exist"
     
-    def test_consistency_check_identifies_inconsistencies(self, client):
+    def test_consistency_check_identifies_inconsistencies(self, client, test_tenant):
         """RED TEST: Should identify style inconsistencies."""
         mixed_style_paragraphs = [
             "This is a formal academic paragraph with sophisticated vocabulary and complex sentence structures.",

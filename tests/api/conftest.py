@@ -13,6 +13,20 @@ from pseudoscribe.infrastructure.model_manager import ModelManager
 
 
 @pytest.fixture(scope="function")
+def test_tenant(client):
+    """Create a test tenant for API tests that require tenant isolation."""
+    tenant_data = {
+        "tenant_id": "test-tenant",
+        "schema_name": "test_tenant_schema",
+        "display_name": "Test Tenant"
+    }
+    response = client.post("/tenants", json=tenant_data)
+    # 200 if created, 400 if already exists - both are OK
+    assert response.status_code in [200, 400], f"Failed to create tenant: {response.json()}"
+    return tenant_data
+
+
+@pytest.fixture(scope="function")
 def client(db_session):
     """
     Create a test client with overridden dependencies for API tests.

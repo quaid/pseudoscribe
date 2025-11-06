@@ -22,7 +22,7 @@ def create_test_tenant(client):
     assert response.status_code in [200, 400] # 400 if it already exists
 
 @pytest.mark.asyncio
-async def test_style_analyze(client):
+async def test_style_analyze(client, test_tenant):
     """Test the style analysis endpoint."""
     payload = {
         "text": "This is a sample text for style analysis. It demonstrates how the Style API works."
@@ -34,7 +34,7 @@ async def test_style_analyze(client):
     assert "formality" in result
 
 @pytest.mark.asyncio
-async def test_style_compare(client):
+async def test_style_compare(client, test_tenant):
     """Test the style comparison endpoint."""
     payload = {
         "text1": "This is a formal document written in a professional tone.",
@@ -47,7 +47,7 @@ async def test_style_compare(client):
     assert "vector_similarity" in result
 
 @pytest.mark.asyncio
-async def test_style_adapt(client):
+async def test_style_adapt(client, test_tenant):
     """Test the style adaptation endpoint."""
     payload = {
         "text": "This is a casual message. I'm writing to tell you about our new product.",
@@ -66,7 +66,7 @@ async def test_style_adapt(client):
     assert "original_profile" in result
 
 @pytest.mark.asyncio
-async def test_style_check(client):
+async def test_style_check(client, test_tenant):
     """Test the style check endpoint."""
     payload = {
         "text": "This is a sample text that we want to check against a target style.",
