@@ -153,8 +153,11 @@ async def get_ollama_models(
         
     except Exception as e:
         logger.error(f"Failed to get Ollama models: {e}")
-        # Return empty models list instead of 503 error for better test compatibility
-        return ModelsResponse(models=[])
+        # Return 503 Service Unavailable when Ollama service is down
+        raise HTTPException(
+            status_code=503,
+            detail={"error": "service_unavailable", "message": str(e)}
+        )
     finally:
         await ollama_service.close()
 

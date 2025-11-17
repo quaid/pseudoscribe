@@ -2,9 +2,10 @@
 
 import pytest
 from sqlalchemy import text
+from unittest.mock import patch, MagicMock
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def setup_role_test_schema(db_session):
     """Set up the test tenant and schema for role management tests."""
     tenant_id = "test-tenant"
@@ -42,7 +43,7 @@ def setup_role_test_schema(db_session):
 
 
 @pytest.mark.asyncio
-async def test_create_role(client):
+async def test_create_role(client, test_tenant):
     """
     Scenario: Create a new role
     Given a valid tenant
@@ -69,7 +70,7 @@ async def test_create_role(client):
     assert "id" in data
 
 @pytest.mark.asyncio
-async def test_create_duplicate_role(client):
+async def test_create_duplicate_role(client, test_tenant):
     """
     Scenario: Create a duplicate role
     Given an existing role
@@ -93,7 +94,7 @@ async def test_create_duplicate_role(client):
     assert "Role already exists" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_get_role(client):
+async def test_get_role(client, test_tenant):
     """
     Scenario: Get role details
     Given an existing role
@@ -121,7 +122,7 @@ async def test_get_role(client):
     assert data["permissions"] == role_data["permissions"]
 
 @pytest.mark.asyncio
-async def test_list_roles(client):
+async def test_list_roles(client, test_tenant):
     """
     Scenario: List all roles
     Given multiple existing roles
@@ -155,7 +156,7 @@ async def test_list_roles(client):
     assert {role["name"] for role in data} == {role["name"] for role in roles}
 
 @pytest.mark.asyncio
-async def test_update_role(client):
+async def test_update_role(client, test_tenant):
     """
     Scenario: Update role details
     Given an existing role
@@ -188,7 +189,7 @@ async def test_update_role(client):
     assert data["permissions"] == update_data["permissions"]
 
 @pytest.mark.asyncio
-async def test_delete_role(client):
+async def test_delete_role(client, test_tenant):
     """
     Scenario: Delete a role
     Given an existing role
