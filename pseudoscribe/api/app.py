@@ -2,7 +2,7 @@
 
 from fastapi import FastAPI
 
-from pseudoscribe.api import tenant_config, role, style, advanced_style, live_suggestions, collaboration, performance, ollama_integration, model_management
+from pseudoscribe.api import tenant_config, role, style, advanced_style, live_suggestions, collaboration, performance, ollama_integration, model_management, audio, knowledge, research, output_generation
 from pseudoscribe.infrastructure.tenant_middleware import TenantMiddleware
 
 app = FastAPI(title="PseudoScribe API")
@@ -25,3 +25,7 @@ app.include_router(collaboration.router)
 app.include_router(performance.router)
 app.include_router(ollama_integration.router)
 app.include_router(model_management.router)
+app.include_router(audio.router)
+app.include_router(knowledge.router)
+app.include_router(research.router)
+app.include_router(output_generation.router)
