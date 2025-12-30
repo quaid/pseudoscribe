@@ -382,6 +382,40 @@ class ZeroDBService:
             raise ZeroDBError(f"Failed to search vectors: {e}")
 
     @handle_zerodb_errors
+    async def delete_vector(
+        self,
+        vector_id: str,
+        namespace: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Delete a specific vector by ID
+
+        Args:
+            vector_id: Vector ID to delete
+            namespace: Vector namespace
+
+        Returns:
+            Dictionary with deletion status
+        """
+        try:
+            options = {
+                "vector_id": vector_id,
+                "namespace": namespace or self.default_namespace
+            }
+
+            result = self._call_mcp_tool(
+                'mcp__zerodb__zerodb_delete_vector',
+                'mcp__zerodb__zerodb_delete_vector',
+                **options
+            )
+
+            logger.info(f"Deleted vector {vector_id}")
+            return result
+
+        except Exception as e:
+            logger.error(f"Failed to delete vector: {e}")
+            raise ZeroDBError(f"Failed to delete vector: {e}")
+
+    @handle_zerodb_errors
     async def semantic_search(
         self,
         query_text: str,
