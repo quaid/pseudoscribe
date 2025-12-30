@@ -14,6 +14,9 @@ from pseudoscribe.infrastructure.style_checker import StyleChecker
 from pseudoscribe.infrastructure.style_profiler import StyleProfiler
 from pseudoscribe.infrastructure.tenant_config import TenantConfigManager
 from pseudoscribe.infrastructure.ollama_service import OllamaService
+from pseudoscribe.infrastructure.audio_processor import AudioProcessor
+from pseudoscribe.infrastructure.research_processor import ResearchProcessor
+from pseudoscribe.infrastructure.zerodb_service import ZeroDBService
 
 # Database setup
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://localhost/pseudoscribe")
@@ -80,3 +83,23 @@ def get_style_adapter(
         style_checker=style_checker,
         model_manager=model_manager,
     )
+
+
+@lru_cache()
+def get_audio_processor() -> AudioProcessor:
+    """Get audio processor instance"""
+    return AudioProcessor()
+
+
+@lru_cache()
+def get_zerodb_service() -> ZeroDBService:
+    """Get ZeroDB service instance"""
+    return ZeroDBService.get_instance()
+
+
+@lru_cache()
+def get_research_processor(
+    zerodb_service: ZeroDBService = Depends(get_zerodb_service)
+) -> ResearchProcessor:
+    """Get research processor instance"""
+    return ResearchProcessor(zerodb_service=zerodb_service)

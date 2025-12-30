@@ -6,6 +6,8 @@ from typing import Dict, Any, List, Optional
 import asyncio
 from scipy.spatial.distance import cosine
 
+from pseudoscribe.infrastructure.style_persistence import StylePersistence
+
 logger = logging.getLogger(__name__)
 
 class StyleProfiler:
@@ -23,15 +25,17 @@ class StyleProfiler:
     used for style checking, adaptation, and maintaining consistency across documents.
     """
     
-    def __init__(self, model_manager):
+    def __init__(self, model_manager, style_persistence: Optional[StylePersistence] = None):
         """
         Initialize the StyleProfiler.
-        
+
         Args:
             model_manager: The model manager instance used for generating vectors
+            style_persistence: Optional StylePersistence instance for persistent storage
         """
         self.model_manager = model_manager
-        self.profiles = {}  # In-memory storage for profiles (would be replaced with persistent storage in production)
+        self.style_persistence = style_persistence
+        self.profiles = {}  # In-memory cache for profiles
     
     async def analyze_text(self, text: str) -> Dict[str, float]:
         """
@@ -340,34 +344,58 @@ class StyleProfiler:
     
     async def store_profile(self, profile: Dict[str, Any]) -> str:
         """
-        Store a style profile.
-        
+        Store a style profile persistently.
+
         Args:
             profile: The style profile to store
-            
+
         Returns:
             The profile ID
+
+        Raises:
+            ValueError: If profile is invalid
         """
         profile_id = profile["id"]
-        # In a real implementation, this might be awaited
-        profile_id = self._save_profile(profile)
-        logger.info(f"Stored style profile with ID: {profile_id}")
+
+        # Use persistent storage if available
+        if self.style_persistence:
+            try:
+                profile_id = await self.style_persistence.save_profile(profile)
+                logger.info(f"Stored style profile with ID: {profile_id} (persistent)")
+            except Exception as e:
+                logger.error(f"Failed to persist profile, falling back to in-memory: {e}")
+                profile_id = self._save_profile(profile)
+        else:
+            # Fall back to in-memory storage
+            profile_id = self._save_profile(profile)
+            logger.info(f"Stored style profile with ID: {profile_id} (in-memory)")
+
         return profile_id
     
     async def retrieve_profile(self, profile_id: str) -> Optional[Dict[str, Any]]:
         """
         Retrieve a style profile by ID.
-        
+
         Args:
             profile_id: The ID of the profile to retrieve
-            
+
         Returns:
             The style profile or None if not found
         """
-        # In a real implementation, this might be awaited
+        # Try persistent storage first
+        if self.style_persistence:
+            try:
+                profile = await self.style_persistence.get_profile(profile_id)
+                if profile:
+                    logger.info(f"Retrieved style profile with ID: {profile_id} (persistent)")
+                    return profile
+            except Exception as e:
+                logger.error(f"Failed to retrieve from persistent storage: {e}")
+
+        # Fall back to in-memory storage
         profile = self._load_profile(profile_id)
         if profile:
-            logger.info(f"Retrieved style profile with ID: {profile_id}")
+            logger.info(f"Retrieved style profile with ID: {profile_id} (in-memory)")
         else:
             logger.warning(f"Style profile with ID {profile_id} not found")
         return profile
@@ -391,13 +419,79 @@ class StyleProfiler:
     def _load_profile(self, profile_id: str) -> Optional[Dict[str, Any]]:
         """
         Load a profile from storage.
-        
+
         Args:
             profile_id: The ID of the profile to load
-            
+
         Returns:
             The profile or None if not found
         """
         # In a real implementation, this would load from a database
         # For now, we'll use in-memory storage
         return self.profiles.get(profile_id)
+
+    async def find_similar_styles(
+        self,
+        query_vector: List[float],
+        limit: int = 10,
+        threshold: float = 0.7
+    ) -> List[Dict[str, Any]]:
+        """
+        Find similar style profiles using vector similarity search.
+
+        Args:
+            query_vector: Query vector for similarity search
+            limit: Maximum number of results
+            threshold: Minimum similarity threshold (0.0-1.0)
+
+        Returns:
+            List of similar profiles with similarity scores
+        """
+        if self.style_persistence:
+            try:
+                results = await self.style_persistence.find_similar_styles(
+                    query_vector=query_vector,
+                    limit=limit,
+                    threshold=threshold
+                )
+                logger.info(f"Found {len(results)} similar styles (persistent)")
+                return results
+            except Exception as e:
+                logger.error(f"Failed to search persistent storage: {e}")
+
+        # Fall back to in-memory search (limited)
+        logger.warning("Using in-memory similarity search (limited functionality)")
+        return []
+
+    async def search_styles_by_text(
+        self,
+        query_text: str,
+        limit: int = 10,
+        threshold: float = 0.7
+    ) -> List[Dict[str, Any]]:
+        """
+        Search for similar styles using text query.
+
+        Args:
+            query_text: Text query for semantic search
+            limit: Maximum number of results
+            threshold: Minimum similarity threshold (0.0-1.0)
+
+        Returns:
+            List of similar profiles with similarity scores
+        """
+        if self.style_persistence:
+            try:
+                results = await self.style_persistence.search_by_text(
+                    query_text=query_text,
+                    limit=limit,
+                    threshold=threshold
+                )
+                logger.info(f"Found {len(results)} similar styles from text query")
+                return results
+            except Exception as e:
+                logger.error(f"Failed to search by text: {e}")
+
+        # Fall back to generating embedding and searching
+        logger.warning("Persistent storage not available for text search")
+        return []
