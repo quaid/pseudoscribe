@@ -71,3 +71,6 @@ temp/
 *AUDIT*.md
 CLOUD_DEPLOYMENT_PLAN.md
 USER_STORY_COMPLETION_ASSESSMENT.md
+
+# Claude Code
+.claude/settings.local.json
