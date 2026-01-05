@@ -495,3 +495,180 @@ class StyleProfiler:
         # Fall back to generating embedding and searching
         logger.warning("Persistent storage not available for text search")
         return []
+
+    def normalize_vector(self, vector: np.ndarray) -> np.ndarray:
+        """
+        Normalize a vector to unit length.
+
+        Args:
+            vector: The vector to normalize
+
+        Returns:
+            Normalized vector with unit length, or zero vector if input is zero
+        """
+        norm = np.linalg.norm(vector)
+        if norm == 0:
+            return vector
+        return vector / norm
+
+    def merge_profile(
+        self,
+        existing_profile: Dict[str, Any],
+        new_vector: np.ndarray,
+        new_characteristics: Dict[str, float]
+    ) -> Dict[str, Any]:
+        """
+        Merge a new sample's vector and characteristics into an existing profile.
+
+        Uses weighted averaging based on sample count to combine vectors and
+        characteristics, giving appropriate weight to the existing profile's
+        accumulated samples.
+
+        Args:
+            existing_profile: The existing profile to update
+            new_vector: Vector from the new sample
+            new_characteristics: Characteristics from the new sample
+
+        Returns:
+            Updated profile with merged vector, characteristics, and incremented sample_count
+        """
+        # Get existing values
+        existing_vector = existing_profile["vector"]
+        existing_characteristics = existing_profile["characteristics"]
+        existing_count = existing_profile.get("sample_count", 1)
+
+        # Calculate new sample count
+        new_count = existing_count + 1
+
+        # Weighted average of vectors
+        merged_vector = (existing_vector * existing_count + new_vector) / new_count
+
+        # Weighted average of characteristics
+        merged_characteristics = {}
+        for key in existing_characteristics:
+            if key in new_characteristics:
+                merged_characteristics[key] = (
+                    existing_characteristics[key] * existing_count +
+                    new_characteristics[key]
+                ) / new_count
+            else:
+                merged_characteristics[key] = existing_characteristics[key]
+
+        # Create merged profile
+        merged_profile = {
+            **existing_profile,
+            "vector": merged_vector,
+            "characteristics": merged_characteristics,
+            "sample_count": new_count,
+            "updated_at": datetime.now(UTC).isoformat()
+        }
+
+        logger.info(f"Merged profile {existing_profile.get('id', 'unknown')} with new sample (count: {new_count})")
+        return merged_profile
+
+    async def create_profile_from_samples(
+        self,
+        samples: List[str],
+        profile_name: str
+    ) -> Dict[str, Any]:
+        """
+        Create a style profile from multiple writing samples.
+
+        Analyzes each sample and creates a profile with averaged vectors
+        and characteristics from all samples.
+
+        Args:
+            samples: List of writing sample texts
+            profile_name: Name for the new profile
+
+        Returns:
+            Style profile with averaged characteristics
+
+        Raises:
+            ValueError: If samples list is empty
+        """
+        if not samples:
+            raise ValueError("At least one sample is required")
+
+        logger.info(f"Creating profile '{profile_name}' from {len(samples)} samples")
+
+        # Collect vectors and characteristics from each sample
+        vectors = []
+        all_characteristics = []
+
+        for sample in samples:
+            # Generate vector for this sample
+            vector = await self.model_manager.generate_vectors(sample)
+            vectors.append(vector)
+
+            # Calculate characteristics for this sample
+            characteristics = self._calculate_heuristic_style_characteristics(sample)
+            all_characteristics.append(characteristics)
+
+        # Average vectors
+        averaged_vector = np.mean(vectors, axis=0)
+
+        # Average characteristics
+        averaged_characteristics = {}
+        characteristic_keys = ["complexity", "formality", "tone", "readability"]
+        for key in characteristic_keys:
+            values = [chars[key] for chars in all_characteristics if key in chars]
+            if values:
+                averaged_characteristics[key] = sum(values) / len(values)
+
+        # Create the profile
+        now = datetime.now(UTC).isoformat()
+        profile = {
+            "id": str(uuid.uuid4()),
+            "name": profile_name,
+            "text_sample": samples[0][:500],  # First sample as reference
+            "vector": averaged_vector,
+            "characteristics": averaged_characteristics,
+            "sample_count": len(samples),
+            "created_at": now,
+            "updated_at": now
+        }
+
+        logger.info(f"Created profile '{profile_name}' with {len(samples)} samples averaged")
+        return profile
+
+    async def update_profile_with_sample(
+        self,
+        profile: Dict[str, Any],
+        sample_text: str
+    ) -> Dict[str, Any]:
+        """
+        Update an existing profile with a new writing sample.
+
+        Generates vector and characteristics from the new sample and merges
+        them into the existing profile using weighted averaging.
+
+        Args:
+            profile: The existing profile to update
+            sample_text: New writing sample text
+
+        Returns:
+            Updated profile with merged vector and characteristics
+
+        Raises:
+            ValueError: If sample_text is empty
+        """
+        if not sample_text or not sample_text.strip():
+            raise ValueError("Sample text cannot be empty")
+
+        logger.info(f"Updating profile '{profile.get('name', 'unknown')}' with new sample")
+
+        # Generate vector for new sample
+        new_vector = await self.model_manager.generate_vectors(sample_text)
+
+        # Calculate characteristics for new sample
+        new_characteristics = self._calculate_heuristic_style_characteristics(sample_text)
+
+        # Merge with existing profile
+        updated_profile = self.merge_profile(
+            existing_profile=profile,
+            new_vector=new_vector,
+            new_characteristics=new_characteristics
+        )
+
+        return updated_profile
